@@ -33,18 +33,50 @@ interface AuthState {
 }
 
 // Convert Supabase user + profile to our User type
-async function toUser(supabaseUser: SupabaseUser): Promise<User | null> {
-  const profile = await db.getProfile(supabaseUser.id);
-  if (!profile) return null;
+async function toUser(supabaseUser: SupabaseUser, retries = 3): Promise<User | null> {
+  let lastError: any;
   
-  return {
-    id: supabaseUser.id,
-    email: supabaseUser.email || profile.email,
-    name: profile.name,
-    level: (profile.level as "N5" | "N4") || "N5",
-    dailyGoalMinutes: profile.daily_goal_minutes || 15,
-    createdAt: profile.created_at,
-  };
+  // Retry logic for profile creation (trigger may not have completed yet)
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const profile = await db.getProfile(supabaseUser.id);
+      if (profile) {
+        return {
+          id: supabaseUser.id,
+          email: supabaseUser.email || profile.email,
+          name: profile.name,
+          level: (profile.level as "N5" | "N4") || "N5",
+          dailyGoalMinutes: profile.daily_goal_minutes || 15,
+          createdAt: profile.created_at,
+        };
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    
+    // If this is not the last attempt, wait before retrying
+    if (attempt < retries - 1) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+  
+  // If profile still doesn't exist after retries, create a minimal user object
+  // from Supabase user data
+  if (supabaseUser.email) {
+    const name = (supabaseUser.user_metadata?.name as string) || supabaseUser.email.split('@')[0];
+    console.warn(`Profile not found for user ${supabaseUser.id}, using default values`);
+    return {
+      id: supabaseUser.id,
+      email: supabaseUser.email,
+      name: name,
+      level: "N5",
+      dailyGoalMinutes: 15,
+      createdAt: new Date().toISOString(),
+    };
+  }
+  
+  console.error('Failed to create user object:', lastError);
+  return null;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -129,10 +161,19 @@ export const useAuthStore = create<AuthState>()(
           }
           
           if (data.user) {
-            // Wait a bit for the trigger to create the profile
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const user = await toUser(data.user);
-            set({ user, isAuthenticated: !!user, isLoading: false });
+            // Wait for the trigger to create the profile
+            // toUser will retry multiple times with delays
+            const user = await toUser(data.user, 5);
+            
+            if (!user) {
+              set({ 
+                error: "Failed to create user profile. Please try again.", 
+                isLoading: false 
+              });
+              return false;
+            }
+            
+            set({ user, isAuthenticated: true, isLoading: false });
             return true;
           }
           

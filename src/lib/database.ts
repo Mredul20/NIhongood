@@ -22,8 +22,11 @@ export const db = {
       .eq('id', userId)
       .single();
     
-    if (error) console.error('Error fetching profile:', error);
-    return data;
+    // Don't log "PGRST116" errors (no rows found) - this is expected during profile creation
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching profile:', error);
+    }
+    return data || null;
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>) {
