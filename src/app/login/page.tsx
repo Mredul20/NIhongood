@@ -13,17 +13,22 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-  const { login, register, isAuthenticated, isLoading, error, clearError, loginWithGoogle, loginWithGithub } = useAuthStore();
+  const { login, register, isAuthenticated, isLoading, error, clearError, loginWithGoogle, loginWithGithub, initialize } = useAuthStore();
   const router = useRouter();
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    // Initialize auth state once
+    initialize().then(() => setIsAuthReady(true));
+  }, [initialize]);
 
   useEffect(() => {
-    if (mounted && isAuthenticated) {
+    if (mounted && isAuthenticated && isAuthReady) {
       router.push("/dashboard");
     }
-  }, [mounted, isAuthenticated, router]);
+  }, [mounted, isAuthenticated, isAuthReady, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +45,8 @@ export default function LoginPage() {
         const success = await login(email, password);
         if (success) {
           router.push("/dashboard");
+        } else {
+          setIsSubmitting(false);
         }
       } else {
         if (!name) {
@@ -53,12 +60,16 @@ export default function LoginPage() {
         const success = await register(email, name, password);
         if (success) {
           router.push("/dashboard");
+        } else {
+          setIsSubmitting(false);
         }
       }
-    } finally {
+    } catch (err) {
       setIsSubmitting(false);
     }
   };
+
+  const isDisabled = isSubmitting || isLoading || !isAuthReady;
 
   const handleOAuthLogin = async (provider: "google" | "github") => {
     if (provider === "google") {
@@ -120,7 +131,7 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Sarah Anderson"
-                  disabled={isSubmitting || isLoading}
+                  disabled={isDisabled}
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500"
                 />
               </div>
@@ -136,7 +147,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                disabled={isSubmitting || isLoading}
+                disabled={isDisabled}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
@@ -159,14 +170,14 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  disabled={isSubmitting || isLoading}
+                  disabled={isDisabled}
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                  disabled={isSubmitting || isLoading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors disabled:text-gray-300"
+                  disabled={isDisabled}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,10 +198,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting || isLoading}
+              disabled={isDisabled}
               className="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
             >
-              {(isSubmitting || isLoading) ? (
+              {isSubmitting ? (
                 <>
                   <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
