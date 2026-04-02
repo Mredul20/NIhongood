@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { db } from '@/lib/database';
+import { checkRateLimit } from '@/lib/rateLimiter';
 
 /**
  * GET /api/cards - List user's SRS cards (with optional filtering)
@@ -18,9 +19,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check rate limit: 60 requests per minute per user
+    const limit = checkRateLimit(session.user.id, '/api/cards', {
+      windowMs: 60 * 1000,
+      maxRequests: 60,
+    });
+
+    if (limit.isLimited) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests. Please try again later.',
+          retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((limit.resetAt - Date.now()) / 1000).toString(),
+            'X-RateLimit-Limit': '60',
+            'X-RateLimit-Remaining': limit.remaining.toString(),
+            'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
+          },
+        }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'kana' | 'vocab' | 'grammar' | null;
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 1000);
+    const limit_param = Math.min(parseInt(searchParams.get('limit') || '100'), 1000);
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const cards = await db.getSRSCards(session.user.id);
@@ -32,14 +57,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply pagination
-    const paginated = filtered.slice(offset, offset + limit);
+    const paginated = filtered.slice(offset, offset + limit_param);
 
-    return NextResponse.json({
-      cards: paginated,
-      total: filtered.length,
-      limit,
-      offset,
-    });
+    return NextResponse.json(
+      {
+        cards: paginated,
+        total: filtered.length,
+        limit: limit_param,
+        offset,
+      },
+      {
+        headers: {
+          'X-RateLimit-Limit': '60',
+          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching cards:', error);
     return NextResponse.json(
@@ -62,12 +96,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check rate limit: 20 requests per minute for POST (more restrictive)
+    const limit = checkRateLimit(session.user.id, '/api/cards/POST', {
+      windowMs: 60 * 1000,
+      maxRequests: 20,
+    });
+
+    if (limit.isLimited) {
+      return NextResponse.json(
+        {
+          error: 'Too many requests. Please try again later.',
+          retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((limit.resetAt - Date.now()) / 1000).toString(),
+            'X-RateLimit-Limit': '20',
+            'X-RateLimit-Remaining': limit.remaining.toString(),
+            'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const cards = Array.isArray(body) ? body : body.cards;
 
     if (!Array.isArray(cards)) {
       return NextResponse.json(
         { error: 'Invalid request: expected array of cards or { cards: [...] }' },
+        { status: 400 }
+      );
+    }
+
+    // Limit to 500 cards per import to prevent abuse
+    if (cards.length > 500) {
+      return NextResponse.json(
+        { error: 'Too many cards. Maximum 500 cards per request.' },
         { status: 400 }
       );
     }
@@ -90,11 +156,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      message: `Successfully imported ${cardsToInsert.length} cards`,
-      imported: cardsToInsert.length,
-      cards: result.data,
-    });
+    return NextResponse.json(
+      {
+        message: `Successfully imported ${cardsToInsert.length} cards`,
+        imported: cardsToInsert.length,
+        cards: result.data,
+      },
+      {
+        headers: {
+          'X-RateLimit-Limit': '20',
+          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
+        },
+      }
+    );
   } catch (error) {
     console.error('Error importing cards:', error);
     return NextResponse.json(

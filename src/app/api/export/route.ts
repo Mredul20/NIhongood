@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { db } from '@/lib/database';
+import { checkRateLimit } from '@/lib/rateLimiter';
 
 /**
  * GET /api/export - Export all user data
@@ -14,6 +15,30 @@ export async function GET(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check rate limit: 10 requests per minute for exports (expensive operation)
+    const limit = checkRateLimit(session.user.id, '/api/export', {
+      windowMs: 60 * 1000,
+      maxRequests: 10,
+    });
+
+    if (limit.isLimited) {
+      return NextResponse.json(
+        {
+          error: 'Too many export requests. Please try again later.',
+          retryAfter: Math.ceil((limit.resetAt - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((limit.resetAt - Date.now()) / 1000).toString(),
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': limit.remaining.toString(),
+            'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
+          },
+        }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -44,6 +69,9 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'text/csv',
           'Content-Disposition': `attachment; filename="nihongood-export-${new Date().toISOString().split('T')[0]}.csv"`,
+          'X-RateLimit-Limit': '10',
+          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       });
     }
@@ -69,6 +97,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename="nihongood-export-${new Date().toISOString().split('T')[0]}.json"`,
+        'X-RateLimit-Limit': '10',
+        'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+        'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
       },
     });
   } catch (error) {
