@@ -1,7 +1,8 @@
 {
-  "name": "nihongood-temp",
+  "name": "nihongood",
   "version": "0.1.0",
   "private": true,
+  "description": "Japanese language learning app for JLPT N5/N4 preparation with SRS flashcards",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,16 +12,20 @@
   "dependencies": {
     "next": "16.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "uuid": "^13.0.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.27",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5"
   }
 }
