@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/learn/grammar", label: "Grammar", icon: "📝" },
   { href: "/review", label: "Review", icon: "🔄" },
   { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/import-export", label: "Import/Export", icon: "↔️" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
