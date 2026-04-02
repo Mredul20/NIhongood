@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { db } from "@/lib/database";
 
 export interface SRSCard {
   id: string;
@@ -47,6 +48,10 @@ interface SRSState {
   // New insight methods
   getInsights: () => SRSInsights;
   getCardExplanation: (card: SRSCard) => CardExplanation;
+  
+  // Sync methods
+  loadFromSupabase: (userId: string) => Promise<void>;
+  syncToSupabase: (userId: string) => Promise<void>;
 }
 
 export interface CardExplanation {
@@ -312,6 +317,72 @@ export const useSRSStore = create<SRSState>()(
           intervalHistory,
           nextSteps,
         };
+      },
+
+      loadFromSupabase: async (userId: string) => {
+        try {
+          const cards = await db.getSRSCards(userId);
+          const reviewHistory = await db.getReviewHistory(userId);
+
+          const formattedCards = cards.map((card) => ({
+            id: card.id,
+            front: card.front,
+            back: card.back,
+            reading: card.reading || undefined,
+            type: card.type as "kana" | "vocab" | "grammar",
+            interval: card.interval,
+            easeFactor: card.ease_factor,
+            nextReview: card.next_review,
+            repetitions: card.repetitions,
+            lastReview: card.last_review || undefined,
+            createdAt: card.created_at,
+          }));
+
+          const formattedHistory = reviewHistory.map((h) => ({
+            date: h.date,
+            correct: h.correct,
+            total: h.total,
+          }));
+
+          set({
+            cards: formattedCards,
+            reviewHistory: formattedHistory,
+          });
+        } catch (error) {
+          console.error("Error loading SRS cards from Supabase:", error);
+        }
+      },
+
+      syncToSupabase: async (userId: string) => {
+        try {
+          const state = get();
+
+          // Sync cards
+          const cardsToSync = state.cards.map((card) => ({
+            id: card.id,
+            front: card.front,
+            back: card.back,
+            reading: card.reading,
+            type: card.type,
+            interval: card.interval,
+            ease_factor: card.easeFactor,
+            next_review: card.nextReview,
+            repetitions: card.repetitions,
+            last_review: card.lastReview,
+            created_at: card.createdAt,
+          }));
+
+          if (cardsToSync.length > 0) {
+            await db.bulkUpsertSRSCards(userId, cardsToSync);
+          }
+
+          // Sync review history
+          for (const history of state.reviewHistory) {
+            await db.upsertReviewHistory(userId, history.date, history.correct, history.total);
+          }
+        } catch (error) {
+          console.error("Error syncing SRS cards to Supabase:", error);
+        }
       },
     }),
     { name: "nihongood-srs" }

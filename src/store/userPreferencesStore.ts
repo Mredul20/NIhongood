@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { db } from "@/lib/database";
 
 // User experience levels for progressive disclosure
 export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
@@ -90,6 +91,10 @@ interface UserPreferencesState {
   applyBeginnerPreset: () => void;
   applyIntermediatePreset: () => void;
   applyAdvancedPreset: () => void;
+  
+  // Sync methods
+  loadFromSupabase: (userId: string) => Promise<void>;
+  syncToSupabase: (userId: string) => Promise<void>;
 }
 
 const DEFAULT_SRS_SETTINGS: SRSSettings = {
@@ -320,6 +325,51 @@ export const useUserPreferencesStore = create<UserPreferencesState>()(
           srsSettings: ADVANCED_PRESET.srsSettings,
           uiPreferences: ADVANCED_PRESET.uiPreferences,
         }),
+
+      loadFromSupabase: async (userId: string) => {
+        try {
+          const preferences = await db.getUserPreferences(userId);
+
+          if (preferences) {
+            const srsSettings = (preferences.srs_settings as Partial<SRSSettings>) || DEFAULT_SRS_SETTINGS;
+            const uiPreferences = (preferences.ui_preferences as Partial<UIPreferences>) || DEFAULT_UI_PREFERENCES;
+
+            set({
+              experienceLevel: (preferences.experience_level as ExperienceLevel) || "beginner",
+              automationLevel: "automatic", // Not stored yet, default to automatic
+              srsSettings: { ...DEFAULT_SRS_SETTINGS, ...srsSettings },
+              uiPreferences: { ...DEFAULT_UI_PREFERENCES, ...uiPreferences },
+              onboarding: {
+                hasCompletedOnboarding: preferences.onboarding_completed || false,
+                introducedFeatures: preferences.introduced_features || [],
+                totalReviewsCompleted: preferences.total_reviews_completed || 0,
+                daysActive: 0, // Not tracked separately, calculate if needed
+                firstSessionDate: null,
+                lastSessionDate: null,
+              },
+            });
+          }
+        } catch (error) {
+          console.error("Error loading user preferences from Supabase:", error);
+        }
+      },
+
+      syncToSupabase: async (userId: string) => {
+        try {
+          const state = get();
+
+          await db.updateUserPreferences(userId, {
+            experience_level: state.experienceLevel,
+            srs_settings: state.srsSettings as any,
+            ui_preferences: state.uiPreferences as any,
+            onboarding_completed: state.onboarding.hasCompletedOnboarding,
+            introduced_features: state.onboarding.introducedFeatures,
+            total_reviews_completed: state.onboarding.totalReviewsCompleted,
+          });
+        } catch (error) {
+          console.error("Error syncing user preferences to Supabase:", error);
+        }
+      },
     }),
     { name: "nihongood-user-preferences" }
   )

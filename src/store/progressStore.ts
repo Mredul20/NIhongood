@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { db } from "@/lib/database";
+import { useAuthStore } from "@/store/authStore";
 
 export interface Badge {
   id: string;
@@ -71,6 +73,10 @@ interface ProgressState {
   getTodayLog: () => DailyLog;
   getWeeklyActivity: () => DailyLog[];
   getXPForNextLevel: () => number;
+  
+  // Sync methods
+  loadFromSupabase: (userId: string) => Promise<void>;
+  syncToSupabase: (userId: string) => Promise<void>;
 }
 
 export interface BadgeCheckStats {
@@ -275,6 +281,67 @@ export const useProgressStore = create<ProgressState>()(
       getXPForNextLevel: () => {
         const state = get();
         return getXPForLevel(state.level + 1) - state.totalXP;
+      },
+
+      loadFromSupabase: async (userId: string) => {
+        try {
+          const progress = await db.getProgress(userId);
+          const dailyLogs = await db.getDailyLogs(userId);
+
+          if (progress) {
+            set({
+              totalXP: progress.total_xp || 0,
+              level: progress.level || 1,
+              currentStreak: progress.current_streak || 0,
+              longestStreak: progress.longest_streak || 0,
+              lastStudyDate: progress.last_review_date,
+              totalReviews: progress.total_reviews || 0,
+              totalStudyMinutes: progress.total_study_minutes || 0,
+              unlockedBadges: progress.unlocked_badges || [],
+            });
+          }
+
+          if (dailyLogs.length > 0) {
+            const formattedLogs = dailyLogs.map((log) => ({
+              date: log.date,
+              timeSpent: log.study_minutes || 0,
+              xpEarned: log.xp_earned || 0,
+              reviewsDone: log.reviews_completed || 0,
+              lessonsCompleted: 0, // Not tracked in DB yet
+            }));
+            set({ dailyLogs: formattedLogs });
+          }
+        } catch (error) {
+          console.error("Error loading progress from Supabase:", error);
+        }
+      },
+
+      syncToSupabase: async (userId: string) => {
+        try {
+          const state = get();
+          
+          await db.updateProgress(userId, {
+            total_xp: state.totalXP,
+            level: state.level,
+            current_streak: state.currentStreak,
+            longest_streak: state.longestStreak,
+            last_review_date: state.lastStudyDate,
+            total_reviews: state.totalReviews,
+            total_study_minutes: state.totalStudyMinutes,
+            unlocked_badges: state.unlockedBadges,
+          });
+
+          // Sync daily logs
+          for (const log of state.dailyLogs) {
+            await db.upsertDailyLog(userId, log.date, {
+              xp_earned: log.xpEarned,
+              reviews_completed: log.reviewsDone,
+              study_minutes: log.timeSpent,
+            });
+          }
+        } catch (error) {
+          console.error("Error syncing progress to Supabase:", error);
+        }
       },
     }),
     { name: "nihongood-progress" }

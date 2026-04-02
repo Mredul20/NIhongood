@@ -1,17 +1,25 @@
 "use client";
 
 import { useAuthStore } from "@/store/authStore";
+import { useInitializeStores, useSyncStores } from "@/hooks/useInitializeStores";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, initialize } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  
+  // Initialize stores when user logs in
+  useInitializeStores();
+  
+  // Set up periodic sync
+  useSyncStores();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    // Initialize auth on mount
+    initialize().then(() => setMounted(true));
+  }, [initialize]);
 
   useEffect(() => {
     if (mounted && !isAuthenticated) {

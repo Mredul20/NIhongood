@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { db } from "@/lib/database";
 
 interface LearningState {
   // Kana progress
@@ -26,6 +27,10 @@ interface LearningState {
   getKanaMastery: () => number;
   getVocabProgress: () => number;
   getGrammarProgress: () => number;
+  
+  // Sync methods
+  loadFromSupabase: (userId: string) => Promise<void>;
+  syncToSupabase: (userId: string) => Promise<void>;
 }
 
 export const useLearningStore = create<LearningState>()(
@@ -87,6 +92,51 @@ export const useLearningStore = create<LearningState>()(
         const total = 10;
         const completed = Object.keys(get().completedGrammar).length;
         return Math.round((completed / total) * 100);
+      },
+
+      loadFromSupabase: async (userId: string) => {
+        try {
+          const learning = await db.getLearningProgress(userId);
+
+          if (learning) {
+            const learnedKana: Record<string, boolean> = {};
+            const learnedVocab: Record<string, boolean> = {};
+            const completedGrammar: Record<string, boolean> = {};
+
+            // Convert arrays to objects
+            (learning.learned_kana || []).forEach((item) => {
+              learnedKana[item] = true;
+            });
+            (learning.learned_vocab || []).forEach((item) => {
+              learnedVocab[item] = true;
+            });
+            (learning.completed_grammar || []).forEach((item) => {
+              completedGrammar[item] = true;
+            });
+
+            set({
+              learnedKana,
+              learnedVocab,
+              completedGrammar,
+            });
+          }
+        } catch (error) {
+          console.error("Error loading learning progress from Supabase:", error);
+        }
+      },
+
+      syncToSupabase: async (userId: string) => {
+        try {
+          const state = get();
+
+          await db.updateLearningProgress(userId, {
+            learned_kana: Object.keys(state.learnedKana).filter((k) => state.learnedKana[k]),
+            learned_vocab: Object.keys(state.learnedVocab).filter((k) => state.learnedVocab[k]),
+            completed_grammar: Object.keys(state.completedGrammar).filter((k) => state.completedGrammar[k]),
+          });
+        } catch (error) {
+          console.error("Error syncing learning progress to Supabase:", error);
+        }
       },
     }),
     { name: "nihongood-learning" }
