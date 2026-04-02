@@ -336,3 +336,79 @@ Webhooks for real-time notifications:
 ## Questions or Issues?
 
 Report issues on GitHub: https://github.com/Mredul20/NIhongood/issues
+
+## Rate Limiting
+
+All API endpoints are rate-limited to prevent abuse. When you exceed the rate limit, you'll receive a `429 Too Many Requests` response.
+
+### Rate Limits by Endpoint
+
+| Endpoint | Method | Limit | Window |
+|----------|--------|-------|--------|
+| `/api/cards` | GET | 60 | 1 minute |
+| `/api/cards` | POST | 20 | 1 minute |
+| `/api/progress` | GET | 100 | 1 minute |
+| `/api/progress` | PUT | 30 | 1 minute |
+| `/api/export` | GET | 10 | 1 minute |
+
+### Rate Limit Headers
+
+Each response includes rate limit information in the headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 2024-04-10T12:34:56Z
+```
+
+### Rate Limited Response
+
+When rate limited, you'll receive:
+
+```json
+{
+  "error": "Too many requests. Please try again later.",
+  "retryAfter": 30
+}
+```
+
+Status: `429 Too Many Requests`
+Header: `Retry-After: 30` (seconds)
+
+### Best Practices
+
+1. **Monitor headers** - Check `X-RateLimit-Remaining` to avoid hitting limits
+2. **Implement backoff** - Use exponential backoff when receiving 429 responses
+3. **Batch requests** - Import up to 500 cards per request
+4. **Cache data** - Store frequently accessed data locally
+5. **Spread requests** - Distribute requests over time rather than sending them in bursts
+
+### Rate Limit Examples
+
+**Approaching limit warning:**
+```bash
+X-RateLimit-Remaining: 5  # Only 5 requests left
+X-RateLimit-Reset: 2024-04-10T12:35:00Z
+```
+
+**Hitting the limit:**
+```bash
+Status: 429 Too Many Requests
+Retry-After: 45
+X-RateLimit-Remaining: 0
+```
+
+### Import Limits
+
+- **Maximum cards per import:** 500
+- **Exceeding limit response:**
+```json
+{
+  "error": "Too many cards. Maximum 500 cards per request."
+}
+```
+
+---
+
+**Note:** Rate limits are per user, not per IP address. Each authenticated user has their own rate limit bucket.
+
