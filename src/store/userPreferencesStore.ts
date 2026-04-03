@@ -38,6 +38,8 @@ export interface UIPreferences {
   compactMode: boolean;
   // Animation level: full, reduced, none
   animationLevel: "full" | "reduced" | "none";
+  // Show furigana (hiragana) above kanji
+  showFurigana: boolean;
 }
 
 export interface OnboardingState {
@@ -114,6 +116,7 @@ const DEFAULT_UI_PREFERENCES: UIPreferences = {
   showWhyThisCard: false,
   compactMode: false,
   animationLevel: "full",
+  showFurigana: true,
 };
 
 const DEFAULT_ONBOARDING: OnboardingState = {
@@ -132,7 +135,7 @@ const BEGINNER_PRESET = {
     newCardsPerDay: 5,
     showIntervalPredictions: false,
     showEaseFactor: false,
-    enableEasyButton: false, // Simpler 3-button interface
+    enableEasyButton: false,
   },
   uiPreferences: {
     ...DEFAULT_UI_PREFERENCES,
@@ -142,6 +145,7 @@ const BEGINNER_PRESET = {
     showWhyThisCard: false,
     compactMode: false,
     animationLevel: "full" as const,
+    showFurigana: true,
   },
 };
 

@@ -6,6 +6,8 @@ import Sidebar from "@/components/Sidebar";
 import BadgeToast from "@/components/BadgeToast";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useUserPreferencesStore } from "@/store/userPreferencesStore";
+import SearchBar from "@/components/SearchBar";
+import LevelUpAnimation from "@/components/LevelUpAnimation";
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { onboarding } = useUserPreferencesStore();
@@ -54,11 +56,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 lg:ml-72 min-h-screen">
+        {/* Top bar with search */}
+        <div className="sticky top-0 z-20 px-6 lg:px-8 py-3 flex items-center justify-end gap-3" style={{ background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-color)" }}>
+          <SearchBar />
+        </div>
         <div className="max-w-6xl mx-auto p-6 lg:p-8">
           {children}
         </div>
       </main>
       <BadgeToast />
+      <LevelUpAnimation />
     </div>
   );
 }

@@ -476,6 +476,18 @@ function InterfaceSettings() {
             </div>
           )}
 
+          {/* Furigana Toggle */}
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
+            <div>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Show Furigana</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Display hiragana reading above kanji</p>
+            </div>
+            <ToggleSwitch
+              enabled={uiPreferences.showFurigana}
+              onChange={(enabled) => updateUIPreferences({ showFurigana: enabled })}
+            />
+          </div>
+
           {/* Animation Level */}
           <div className="pt-4" style={{ borderTop: "1px solid var(--border-color)" }}>
             <label className="text-sm block mb-3" style={{ color: "var(--text-primary)" }}>Animation Level</label>

@@ -5,6 +5,7 @@ import { VOCABULARY, VOCAB_CATEGORIES, VocabWord } from "@/data/vocabulary";
 import { useLearningStore } from "@/store/learningStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
+import { useUserPreferencesStore } from "@/store/userPreferencesStore";
 import { speak } from "@/lib/speak";
 
 export default function VocabPage() {
@@ -17,6 +18,8 @@ export default function VocabPage() {
   const learning = useLearningStore();
   const progress = useProgressStore();
   const srs = useSRSStore();
+  const { uiPreferences } = useUserPreferencesStore();
+  const showFurigana = uiPreferences.showFurigana;
 
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return <div className="animate-pulse duo-card h-96" />;
@@ -128,10 +131,20 @@ export default function VocabPage() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <p className="text-2xl font-japanese font-bold" style={{ color: isLearned ? "#e0357a" : "var(--text-primary)" }}>
-                    {word.kanji}
-                  </p>
-                  <p className="text-sm font-japanese font-semibold" style={{ color: "#ce82ff" }}>{word.hiragana}</p>
+                  {/* Furigana above kanji */}
+                  {showFurigana && word.hiragana !== word.kanji ? (
+                    <ruby className="text-2xl font-japanese font-bold" style={{ color: isLearned ? "#e0357a" : "var(--text-primary)" }}>
+                      {word.kanji}
+                      <rt className="text-xs font-normal" style={{ color: "#ce82ff" }}>{word.hiragana}</rt>
+                    </ruby>
+                  ) : (
+                    <p className="text-2xl font-japanese font-bold" style={{ color: isLearned ? "#e0357a" : "var(--text-primary)" }}>
+                      {word.kanji}
+                    </p>
+                  )}
+                  {!showFurigana && (
+                    <p className="text-sm font-japanese font-semibold" style={{ color: "#ce82ff" }}>{word.hiragana}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <button

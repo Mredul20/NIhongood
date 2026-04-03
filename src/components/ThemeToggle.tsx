@@ -5,38 +5,37 @@ import { useEffect, useState } from "react";
 
 const themes: { value: Theme; icon: string; label: string }[] = [
   { value: "light", icon: "☀️", label: "Light" },
-  { value: "dark", icon: "🌙", label: "Dark" },
-  { value: "system", icon: "💻", label: "System" },
+  { value: "dark",  icon: "🌙", label: "Dark"  },
+  { value: "system",icon: "💻", label: "System"},
 ];
 
 export function ThemeToggle() {
   const { theme, setTheme, initTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    initTheme();
-  }, [initTheme]);
+  useEffect(() => { setMounted(true); initTheme(); }, [initTheme]);
 
   if (!mounted) {
     return (
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-navy-800/60 dark:bg-navy-800/60 light:bg-slate-100">
-        <div className="w-20 h-8 rounded-lg bg-navy-700/50 animate-pulse" />
+      <div className="flex items-center gap-1 p-1 rounded-xl animate-pulse" style={{ background: "var(--bg-secondary)" }}>
+        <div className="w-20 h-8 rounded-lg" style={{ background: "var(--border-color)" }} />
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-navy-800/60 dark:bg-navy-800/60">
+    <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: "var(--bg-secondary)", border: "2px solid var(--border-color)" }}>
       {themes.map((t) => (
         <button
           key={t.value}
           onClick={() => setTheme(t.value)}
-          className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-            theme === t.value
-              ? "bg-gradient-to-r from-sakura-500/20 to-sakura-600/20 text-sakura-400 shadow-sm"
-              : "text-slate-400 hover:text-slate-300 hover:bg-navy-700/50"
+          className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+            theme === t.value ? "text-sakura-400" : ""
           }`}
+          style={theme === t.value
+            ? { background: "rgba(255,75,139,0.15)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+            : { color: "var(--text-secondary)" }
+          }
           title={t.label}
         >
           <span className="text-sm">{t.icon}</span>
@@ -47,49 +46,31 @@ export function ThemeToggle() {
   );
 }
 
-// Compact version for sidebar
+// Compact version for sidebar — cycles through light → dark → system
 export function ThemeToggleCompact() {
   const { theme, resolvedTheme, setTheme, initTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    initTheme();
-  }, [initTheme]);
+  useEffect(() => { setMounted(true); initTheme(); }, [initTheme]);
 
   const cycleTheme = () => {
     const order: Theme[] = ["light", "dark", "system"];
-    const currentIndex = order.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % order.length;
-    setTheme(order[nextIndex]);
+    setTheme(order[(order.indexOf(theme) + 1) % order.length]);
   };
 
-  if (!mounted) {
-    return (
-      <button className="w-full h-12 rounded-xl bg-navy-800/60 animate-pulse" />
-    );
-  }
+  if (!mounted) return <div className="w-full h-10 rounded-xl animate-pulse" style={{ background: "var(--bg-secondary)" }} />;
 
-  const getIcon = () => {
-    if (theme === "system") return "💻";
-    return resolvedTheme === "dark" ? "🌙" : "☀️";
-  };
-
-  const getLabel = () => {
-    if (theme === "system") return "System";
-    return resolvedTheme === "dark" ? "Dark" : "Light";
-  };
+  const icon  = theme === "system" ? "💻" : resolvedTheme === "dark" ? "🌙" : "☀️";
+  const label = theme === "system" ? "System" : resolvedTheme === "dark" ? "Dark" : "Light";
 
   return (
     <button
       onClick={cycleTheme}
       className="nav-link w-full"
-      title={`Current: ${getLabel()}. Click to change.`}
+      title={`Theme: ${label}. Click to cycle.`}
     >
-      <span className="text-lg transition-transform duration-300 hover:scale-110">
-        {getIcon()}
-      </span>
-      <span className="text-sm font-medium">{getLabel()} Mode</span>
+      <span className="text-lg">{icon}</span>
+      <span className="text-sm font-bold">{label} Mode</span>
     </button>
   );
 }
