@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useProgressStore, ALL_BADGES } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
 import { useLearningStore } from "@/store/learningStore";
+import StudyHeatmap from "@/components/StudyHeatmap";
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuthStore();
@@ -133,32 +134,62 @@ export default function ProfilePage() {
         <StatBox icon="📝" label="Grammar Done" value={Object.keys(learning.completedGrammar).length.toString()} />
       </div>
 
-      {/* Badges */}
+      {/* Study Heatmap */}
       <div className="glass-card p-6">
-        <h2 className="section-title mb-6">
+        <StudyHeatmap />
+      </div>
+
+      {/* Badges with tiers */}
+      <div className="glass-card p-6">
+        <h2 className="section-title mb-2">
           <span>🏆</span> Badges ({progress.unlockedBadges.length}/{ALL_BADGES.length})
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {ALL_BADGES.map((badge) => {
-            const unlocked = progress.unlockedBadges.includes(badge.id);
-            return (
-              <div
-                key={badge.id}
-                className={`p-4 rounded-xl border text-center transition-all ${
-                  unlocked
-                    ? "bg-gold-400/5 border-gold-400/20"
-                    : "bg-navy-800/30 border-white/5 opacity-40"
-                }`}
-              >
-                <div className="text-3xl mb-2">{unlocked ? badge.emoji : "🔒"}</div>
-                <p className={`text-sm font-bold ${unlocked ? "text-slate-200" : "text-slate-500"}`}>
-                  {badge.name}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">{badge.description}</p>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+          Earn badges by hitting milestones in your Japanese journey.
+        </p>
+
+        {/* Tier groups */}
+        {[
+          { tier: "🥉 Bronze", color: "#cd7f32", ids: ["first-review","vocab-10","kana-hiragana","grammar-5","xp-100","streak-3","reviews-50","level-5"] },
+          { tier: "🥈 Silver", color: "#aaaaaa", ids: ["vocab-25","kana-katakana","grammar-all","xp-500","streak-7","reviews-100","level-10"] },
+          { tier: "🥇 Gold",   color: "#ffc800", ids: ["vocab-50","kana-master","xp-1000","streak-30"] },
+        ].map(({ tier, color, ids }) => {
+          const tierBadges = ALL_BADGES.filter((b) => ids.includes(b.id));
+          const unlockedCount = tierBadges.filter((b) => progress.unlockedBadges.includes(b.id)).length;
+          return (
+            <div key={tier} className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-black" style={{ color }}>{tier}</span>
+                <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                  {unlockedCount}/{tierBadges.length}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {tierBadges.map((badge) => {
+                  const unlocked = progress.unlockedBadges.includes(badge.id);
+                  return (
+                    <div
+                      key={badge.id}
+                      className="p-4 rounded-xl border-2 text-center transition-all"
+                      style={{
+                        background: unlocked ? `${color}10` : "var(--bg-secondary)",
+                        borderColor: unlocked ? `${color}40` : "var(--border-color)",
+                        boxShadow: unlocked ? `0 3px 0 ${color}30` : `0 3px 0 var(--border-color)`,
+                        opacity: unlocked ? 1 : 0.5,
+                      }}
+                    >
+                      <div className="text-3xl mb-2">{unlocked ? badge.emoji : "🔒"}</div>
+                      <p className="text-sm font-bold" style={{ color: unlocked ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                        {badge.name}
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{badge.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -168,8 +199,8 @@ function StatBox({ icon, label, value }: { icon: string; label: string; value: s
   return (
     <div className="glass-card-hover p-4 text-center">
       <span className="text-2xl">{icon}</span>
-      <p className="text-2xl font-bold text-slate-100 mt-2">{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{label}</p>
+      <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>{value}</p>
+      <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
     </div>
   );
 }

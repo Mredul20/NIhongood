@@ -46,12 +46,16 @@ export default function DashboardPage() {
   const vocabProgress = learning.getVocabProgress();
   const grammarProgress = learning.getGrammarProgress();
   const xpForNext = progress.getXPForNextLevel();
+  const dailyGoalMinutes = user?.dailyGoalMinutes || 15;
+  const goalProgress = Math.min(100, Math.round((todayLog.timeSpent / dailyGoalMinutes) * 100));
+  const goalDone = todayLog.timeSpent >= dailyGoalMinutes;
 
   const dailyTasks = [
-    { label: "Review due cards", count: cardCount.due, done: cardCount.due === 0, href: "/review",       icon: "🔄", color: "#ff4b4b" },
-    { label: "Learn vocabulary",  count: null,          done: vocabProgress >= 100,   href: "/learn/vocab",   icon: "📖", color: "#ce82ff" },
-    { label: "Study grammar",     count: null,          done: grammarProgress >= 100, href: "/learn/grammar", icon: "📝", color: "#1cb0f6" },
-    { label: "Practice kana",     count: null,          done: kanaMastery >= 100,     href: "/learn/kana",    icon: "あ", color: "#ff86d0" },
+    { label: "Review due cards",   count: cardCount.due, done: cardCount.due === 0, href: "/review",       icon: "🔄", color: "#ff4b4b" },
+    { label: "Daily Challenge",    count: null,          done: todayLog.xpEarned >= 50,  href: "/challenge",    icon: "⚡", color: "#ff9600" },
+    { label: "Learn vocabulary",   count: null,          done: vocabProgress >= 100,  href: "/learn/vocab",   icon: "📖", color: "#ce82ff" },
+    { label: "Study grammar",      count: null,          done: grammarProgress >= 100, href: "/learn/grammar", icon: "📝", color: "#1cb0f6" },
+    { label: "Practice kana",      count: null,          done: kanaMastery >= 100,    href: "/learn/kana",    icon: "あ", color: "#ff86d0" },
   ];
 
   return (
@@ -74,6 +78,35 @@ export default function DashboardPage() {
         >
           {cardCount.due > 0 ? `🔄 Review (${cardCount.due})` : "🔄 Start Review"}
         </Link>
+      </div>
+
+      {/* ── DAILY GOAL BAR ── */}
+      <div className="duo-card p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎯</span>
+            <span className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Daily Goal</span>
+            {goalDone && <span className="text-xs font-black text-green-500">✅ Complete!</span>}
+          </div>
+          <span className="text-xs font-bold" style={{ color: "var(--text-secondary)" }}>
+            {todayLog.timeSpent}m / {dailyGoalMinutes}m
+          </span>
+        </div>
+        <div className="progress-bar">
+          <div
+            className="progress-bar-fill"
+            style={{
+              width: `${goalProgress}%`,
+              background: goalDone
+                ? "linear-gradient(90deg, #58cc02, #89e219)"
+                : "linear-gradient(90deg, #ff4b8b, #ff79a8)",
+            }}
+          />
+        </div>
+        <div className="flex justify-between text-xs mt-1.5 font-semibold" style={{ color: "var(--text-secondary)" }}>
+          <span>{goalProgress}% of daily goal</span>
+          <span>⚡ {todayLog.xpEarned} XP today</span>
+        </div>
       </div>
 
       {/* ── XP LEVEL BAR ── */}
@@ -188,6 +221,7 @@ export default function DashboardPage() {
               <QuickAction href="/flashcards"    label="Flashcards"    emoji="🃏" color="#ffc800" shadow="#e0a800" id="quick-flash" />
               <QuickAction href="/learn/vocab"   label="Study Vocab"   emoji="📖" color="#ce82ff" shadow="#a560d8" id="quick-vocab" />
               <QuickAction href="/review"        label="Review Cards"  emoji="🔄" color="#ff4b8b" shadow="#e0357a" id="quick-review" />
+              <QuickAction href="/challenge"     label="Daily Challenge" emoji="⚡" color="#ff9600" shadow="#e08000" id="quick-challenge" />
             </div>
           </div>
 

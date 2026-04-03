@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/learn/grammar",  label: "Grammar",      icon: "📝", color: "#1cb0f6" },
   { href: "/flashcards",     label: "Flashcards",   icon: "🃏", color: "#ffc800" },
   { href: "/review",         label: "Review",       icon: "🔄", color: "#ff4b4b" },
+  { href: "/challenge",      label: "Challenge",    icon: "⚡", color: "#ff9600" },
   { href: "/profile",        label: "Profile",      icon: "👤", color: "#ff4b8b" },
   { href: "/import-export",  label: "Import/Export",icon: "↔️", color: "#1cb0f6" },
   { href: "/settings",       label: "Settings",     icon: "⚙️", color: "#777777" },
