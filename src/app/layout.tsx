@@ -6,6 +6,13 @@ export const metadata: Metadata = {
   title: "NIhongood — Learn Japanese the Smart Way",
   description: "Master Japanese with spaced repetition, kana charts, vocabulary, grammar, and gamified progress tracking. JLPT N5 & N4 preparation made fun.",
   keywords: ["Japanese", "JLPT", "learn Japanese", "hiragana", "katakana", "SRS", "flashcards"],
+  manifest: "/manifest.json",
+  themeColor: "#ff4b8b",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "NIhongood",
+  },
 };
 
 export default function RootLayout({

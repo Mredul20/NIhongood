@@ -1,0 +1,21 @@
+{
+  "name": "NIhongood — Japanese Learning",
+  "short_name": "NIhongood",
+  "description": "Learn Japanese with spaced repetition — JLPT N5/N4 flashcards, kana, kanji, and grammar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#ff4b8b",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "lifestyle"],
+  "lang": "en",
+  "shortcuts": [
+    { "name": "Review Cards",    "url": "/review",    "description": "Start your SRS review session" },
+    { "name": "Daily Challenge", "url": "/challenge", "description": "60-second timed challenge" },
+    { "name": "Learn Vocab",     "url": "/learn/vocab","description": "Browse vocabulary" }
+  ]
+}

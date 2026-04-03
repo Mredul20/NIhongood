@@ -163,6 +163,92 @@ export const GRAMMAR_POINTS: GrammarPoint[] = [
       { question: "Translate: 日本人ですか。", options: ["I am Japanese.", "Are you Japanese?", "Japanese person.", "This is Japan."], correct: 1 },
     ],
   },
+  // ── N4 Grammar ──────────────────────────────────────────────────────────────
+  {
+    id: "g11",
+    title: "〜ている (te iru) — Ongoing Action / State",
+    titleJa: "〜ている",
+    level: "N4",
+    structure: "[Verb te-form] + いる",
+    explanation: "「〜ている」expresses an action in progress (like English '-ing') or a resultant state. Casual speech shortens it to 「〜てる」.",
+    examples: [
+      { ja: "本を読んでいます。", en: "I am reading a book.", breakdown: "本(book) を(obj) 読んで(read-te) います(is)" },
+      { ja: "雨が降っています。", en: "It is raining.", breakdown: "雨(rain) が(subj) 降って(fall-te) います(is)" },
+      { ja: "結婚しています。", en: "I am married. (state)", breakdown: "結婚して(married-te) います(am)" },
+    ],
+    quiz: [
+      { question: "How do you say 'I am eating'?", options: ["食べます", "食べた", "食べています", "食べない"], correct: 2 },
+      { question: "〜ている can express:", options: ["Only past actions", "Ongoing actions and resultant states", "Future plans only", "Negative requests"], correct: 1 },
+    ],
+  },
+  {
+    id: "g12",
+    title: "〜たことがある — Have Ever Done",
+    titleJa: "〜たことがある",
+    level: "N4",
+    structure: "[Verb ta-form] + ことがある",
+    explanation: "Used to express that you have had the experience of doing something at least once. It describes past experiences.",
+    examples: [
+      { ja: "日本に行ったことがあります。", en: "I have been to Japan.", breakdown: "行った(went) こと(experience) が あります(have)" },
+      { ja: "寿司を食べたことがありますか。", en: "Have you ever eaten sushi?", breakdown: "食べた(ate) こと が あります(have) か(question)" },
+      { ja: "富士山に登ったことがない。", en: "I have never climbed Mt. Fuji.", breakdown: "登った(climbed) こと が ない(don't have)" },
+    ],
+    quiz: [
+      { question: "How do you say 'I have eaten ramen'?", options: ["ラーメンを食べます", "ラーメンを食べたことがあります", "ラーメンを食べている", "ラーメンを食べたい"], correct: 1 },
+      { question: "What form precedes ことがある?", options: ["て-form", "ます-form", "た-form", "ない-form"], correct: 2 },
+    ],
+  },
+  {
+    id: "g13",
+    title: "〜なければならない — Must / Have To",
+    titleJa: "〜なければならない",
+    level: "N4",
+    structure: "[Verb nai-form stem] + なければならない",
+    explanation: "Expresses obligation or necessity — 'must do' or 'have to do'. The casual form is 「〜なきゃ」. Negative: 「〜なくてもいい」(don't have to).",
+    examples: [
+      { ja: "宿題をしなければなりません。", en: "I must do my homework.", breakdown: "宿題(homework) を し(do) なければなりません(must)" },
+      { ja: "毎日薬を飲まなければならない。", en: "I have to take medicine every day.", breakdown: "薬(medicine) を 飲ま(drink-nai-stem) なければならない(must)" },
+      { ja: "早く帰らなきゃ。", en: "I have to go home soon. (casual)", breakdown: "帰ら(return-nai-stem) なきゃ(must-casual)" },
+    ],
+    quiz: [
+      { question: "Which means 'must study'?", options: ["勉強してもいい", "勉強しなければならない", "勉強したい", "勉強しないでください"], correct: 1 },
+      { question: "Casual form of なければならない is:", options: ["なりません", "なくてもいい", "なきゃ", "ながら"], correct: 2 },
+    ],
+  },
+  {
+    id: "g14",
+    title: "〜てもいい — May / It's OK To",
+    titleJa: "〜てもいい",
+    level: "N4",
+    structure: "[Verb te-form] + もいい",
+    explanation: "Used to give or ask for permission. 「〜てもいいですか」means 'May I...?' and 「〜てもいいです」means 'You may...' or 'It's OK to...'.",
+    examples: [
+      { ja: "写真を撮ってもいいですか。", en: "May I take a photo?", breakdown: "写真(photo) を 撮って(take-te) も いい(ok) ですか(question)" },
+      { ja: "ここに座ってもいいです。", en: "You may sit here.", breakdown: "ここ(here) に 座って(sit-te) も いい(ok) です" },
+      { ja: "帰ってもいいよ。", en: "It's OK to go home. (casual)", breakdown: "帰って(go home-te) も いいよ(ok-casual)" },
+    ],
+    quiz: [
+      { question: "How do you ask 'May I come in?'", options: ["入ってはいけません", "入ってもいいですか", "入らなければなりません", "入っている"], correct: 1 },
+      { question: "〜てもいい expresses:", options: ["Prohibition", "Permission", "Obligation", "Past experience"], correct: 1 },
+    ],
+  },
+  {
+    id: "g15",
+    title: "〜てはいけない — Must Not / Prohibited",
+    titleJa: "〜てはいけない",
+    level: "N4",
+    structure: "[Verb te-form] + はいけない",
+    explanation: "Expresses prohibition — 'must not' or 'you cannot'. It is the opposite of 〜てもいい. Polite: 「〜てはいけません」.",
+    examples: [
+      { ja: "ここで写真を撮ってはいけません。", en: "You must not take photos here.", breakdown: "撮って(take-te) は いけません(must not)" },
+      { ja: "授業中に寝てはいけない。", en: "You must not sleep during class.", breakdown: "寝て(sleep-te) は いけない(must not)" },
+      { ja: "嘘をついてはいけないよ。", en: "You must not lie.", breakdown: "ついて(lie-te) は いけないよ(must not-casual)" },
+    ],
+    quiz: [
+      { question: "Which means 'You must not run here'?", options: ["ここで走ってもいいです", "ここで走ってはいけません", "ここで走りたいです", "ここで走っています"], correct: 1 },
+      { question: "〜てはいけない is the opposite of:", options: ["〜なければならない", "〜たことがある", "〜てもいい", "〜ている"], correct: 2 },
+    ],
+  },
   {
     id: "g10",
     title: "で (de) — Location of Action / Means",

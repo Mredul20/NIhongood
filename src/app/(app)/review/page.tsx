@@ -6,8 +6,10 @@ import { useProgressStore } from "@/store/progressStore";
 import { useUserPreferencesStore } from "@/store/userPreferencesStore";
 import { CardInfoModal, SRSInsightsPanel } from "@/components/SRSInsights";
 import { HelpTooltip, UnlockProgress, FeatureUnlockNotification } from "@/components/OnboardingFlow";
+import { speak } from "@/lib/speak";
 
 type Rating = "again" | "hard" | "good" | "easy";
+type ReviewMode = "normal" | "reverse" | "listening";
 
 export default function ReviewPage() {
   const srs = useSRSStore();
@@ -33,6 +35,8 @@ export default function ReviewPage() {
   const [showCardInfo, setShowCardInfo] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [newUnlock, setNewUnlock] = useState<string | null>(null);
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("normal");
+  const [listeningAnswer, setListeningAnswer] = useState("");
 
   // Check if features should be shown based on experience level and unlocks
   const showCardStatusBar = uiPreferences.showCardStatusBar && 
@@ -240,34 +244,51 @@ export default function ReviewPage() {
   const currentCard = dueCards[currentIndex];
   const cardExplanation = srs.getCardExplanation(currentCard);
 
+  // Determine what to show as front/back based on mode
+  const displayFront = reviewMode === "reverse" ? currentCard.back : currentCard.front;
+  const displayBack  = reviewMode === "reverse" ? currentCard.front : currentCard.back;
+
   return (
     <div className={`space-y-6 animate-fade-in ${uiPreferences.compactMode ? "space-y-4" : ""}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
+          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: "var(--text-primary)" }}>
             <span>🔄</span> Review Session
             {experienceLevel === "beginner" && (
               <HelpTooltip content="Review your flashcards to strengthen your memory. Cards you find difficult will appear more often.">
-                <span className="text-slate-500 cursor-help text-base">ℹ️</span>
+                <span className="cursor-help text-base" style={{ color: "var(--text-secondary)" }}>ℹ️</span>
               </HelpTooltip>
             )}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
             Card {currentIndex + 1} of {dueCards.length}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Mode selector */}
+          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: "var(--bg-secondary)", border: "2px solid var(--border-color)" }}>
+            {([
+              { mode: "normal" as ReviewMode,    icon: "🃏", label: "Normal"   },
+              { mode: "reverse" as ReviewMode,   icon: "🔃", label: "Reverse"  },
+              { mode: "listening" as ReviewMode, icon: "🔊", label: "Listen"   },
+            ] as const).map(({ mode, icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => { setReviewMode(mode); setFlipped(false); setListeningAnswer(""); }}
+                title={label}
+                className="px-2 py-1 rounded-lg text-xs font-bold transition-all"
+                style={reviewMode === mode
+                  ? { background: "rgba(255,75,139,0.15)", color: "#ff4b8b" }
+                  : { color: "var(--text-secondary)" }
+                }
+              >{icon} {label}</button>
+            ))}
+          </div>
           {showInsightsButton && (
-            <button
-              onClick={() => setShowInsights(true)}
-              className="text-xs text-slate-400 hover:text-sakura-400 flex items-center gap-1 transition-colors"
-              title="View SRS Insights"
-            >
-              <span>📊</span>
-            </button>
+            <button onClick={() => setShowInsights(true)} className="text-xs hover:text-sakura-400 transition-colors" title="View SRS Insights" style={{ color: "var(--text-secondary)" }}>📊</button>
           )}
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-3 text-sm font-bold">
             <span className="text-teal-400">✓ {sessionStats.correct}</span>
             <span className="text-red-400">✗ {sessionStats.total - sessionStats.correct}</span>
           </div>
@@ -315,7 +336,51 @@ export default function ReviewPage() {
         </div>
       )}
 
-      {/* Flashcard */}
+      {/* Listening Mode */}
+      {reviewMode === "listening" ? (
+        <div className="duo-card p-8 text-center space-y-6">
+          <span className={`badge ${currentCard.type === "kana" ? "badge-sakura" : currentCard.type === "vocab" ? "badge-teal" : "badge-gold"}`}>
+            {currentCard.type} · Listening
+          </span>
+          <div>
+            <button
+              onClick={() => speak(currentCard.front)}
+              className="text-7xl hover:scale-110 transition-transform active:scale-95"
+              title="Play audio"
+            >🔊</button>
+            <p className="text-sm font-semibold mt-3" style={{ color: "var(--text-secondary)" }}>
+              Tap to hear · Type what you think it means
+            </p>
+          </div>
+          <div className="relative max-w-xs mx-auto">
+            <input
+              type="text"
+              value={listeningAnswer}
+              onChange={(e) => setListeningAnswer(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") setFlipped(true); }}
+              placeholder="Type the meaning..."
+              className="w-full px-4 py-3 rounded-xl border-2 text-center font-bold outline-none transition-all"
+              style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+              autoFocus
+            />
+          </div>
+          {!flipped ? (
+            <button onClick={() => setFlipped(true)} className="btn-primary px-8">Check Answer</button>
+          ) : (
+            <div className="space-y-3 animate-fade-in">
+              <p className="text-3xl font-japanese font-black" style={{ color: "var(--text-primary)" }}>{currentCard.front}</p>
+              <p className="text-xl font-bold text-teal-400">{currentCard.back}</p>
+              {listeningAnswer.trim() && (
+                <p className="text-sm font-semibold" style={{ color: listeningAnswer.toLowerCase().trim() === currentCard.back.toLowerCase().trim() ? "#58cc02" : "#ff4b4b" }}>
+                  Your answer: {listeningAnswer}
+                  {listeningAnswer.toLowerCase().trim() === currentCard.back.toLowerCase().trim() ? " ✓" : " ✗"}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+      /* Normal / Reverse Flashcard */
       <div className="flashcard" style={{ minHeight: uiPreferences.compactMode ? "280px" : "320px" }}>
         <div
           className={`flashcard-inner cursor-pointer ${flipped ? "flipped" : ""}`}
@@ -324,34 +389,31 @@ export default function ReviewPage() {
         >
           {/* Front */}
           <div className="flashcard-face" style={{ position: flipped ? "absolute" : "relative" }}>
-            <span className={`badge mb-4 ${
-              currentCard.type === "kana" ? "badge-sakura" : currentCard.type === "vocab" ? "badge-teal" : "badge-gold"
-            }`}>
-              {currentCard.type}
+            <span className={`badge mb-4 ${currentCard.type === "kana" ? "badge-sakura" : currentCard.type === "vocab" ? "badge-teal" : "badge-gold"}`}>
+              {currentCard.type}{reviewMode === "reverse" ? " · Reverse" : ""}
             </span>
-            <p className="text-6xl font-japanese font-bold mb-4">{currentCard.front}</p>
-            {currentCard.reading && (
+            <p className={`font-japanese font-bold mb-4 ${reviewMode === "reverse" ? "text-3xl" : "text-6xl"}`} style={{ color: "var(--text-primary)" }}>{displayFront}</p>
+            {reviewMode === "normal" && currentCard.reading && (
               <p className="text-lg text-sakura-400/60 font-japanese">{currentCard.reading}</p>
             )}
-            <p className="text-sm text-slate-500 mt-6">Tap to reveal answer</p>
+            <p className="text-sm mt-6" style={{ color: "var(--text-secondary)" }}>Tap to reveal answer</p>
           </div>
 
           {/* Back */}
           <div className="flashcard-face flashcard-back" style={{ position: !flipped ? "absolute" : "relative" }}>
-            <span className={`badge mb-4 ${
-              currentCard.type === "kana" ? "badge-sakura" : currentCard.type === "vocab" ? "badge-teal" : "badge-gold"
-            }`}>
-              {currentCard.type}
+            <span className={`badge mb-4 ${currentCard.type === "kana" ? "badge-sakura" : currentCard.type === "vocab" ? "badge-teal" : "badge-gold"}`}>
+              {currentCard.type}{reviewMode === "reverse" ? " · Reverse" : ""}
             </span>
-            <p className="text-4xl font-japanese font-bold mb-2 text-slate-300">{currentCard.front}</p>
-            {currentCard.reading && (
+            <p className="text-3xl font-japanese font-bold mb-2" style={{ color: "var(--text-secondary)" }}>{displayFront}</p>
+            {reviewMode === "normal" && currentCard.reading && (
               <p className="text-lg text-sakura-400/60 font-japanese mb-2">{currentCard.reading}</p>
             )}
-            <div className="w-16 h-0.5 bg-white/10 my-4" />
-            <p className="text-2xl font-bold text-teal-400">{currentCard.back}</p>
+            <div className="w-16 h-0.5 my-4" style={{ background: "var(--border-color)" }} />
+            <p className={`font-bold text-teal-400 ${reviewMode === "reverse" ? "text-4xl font-japanese" : "text-2xl"}`}>{displayBack}</p>
           </div>
         </div>
       </div>
+      )}
 
       {/* Rating Buttons - Progressive Disclosure */}
       {flipped && (
