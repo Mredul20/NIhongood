@@ -1,27 +1,49 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Middleware to handle session and authentication
- * In Next.js, we mainly use this to:
- * 1. Protect routes from unauthenticated access
- * 2. Ensure cookies are set correctly for session management
+ * Middleware to handle session refresh for Supabase SSR.
+ * This is required in production so that the auth token stored in cookies
+ * is refreshed on every request, keeping the session alive.
+ * Without this, the session cookie set at /auth/callback never propagates
+ * to subsequent server-side requests.
  */
 export async function middleware(request: NextRequest) {
-  // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/review', '/learn', '/settings', '/stats'];
-  const pathname = request.nextUrl.pathname;
-
-  // Check if the current path requires authentication
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-
-  if (isProtectedRoute) {
-    // For protected routes, we rely on the AuthGuard component
-    // to handle redirection to login if needed
-    // The middleware here mainly ensures proper response structure
+  // Fail fast with a clear message if env vars are missing (e.g. not set on hosting platform)
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.error(
+      '[middleware] Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your hosting platform environment settings.'
+    );
     return NextResponse.next();
   }
 
-  return NextResponse.next();
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Apply cookies to both the request and response so they propagate correctly
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Refresh the session — this is the key call that keeps cookies in sync
+  // Do NOT use getSession() here; getUser() hits the Supabase Auth server to verify
+  await supabase.auth.getUser();
+
+  return supabaseResponse;
 }
 
 export const config = {
@@ -31,9 +53,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
-     * - login and auth routes (no auth needed)
      */
-    '/((?!_next/static|_next/image|favicon.ico|login|api/auth|auth).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

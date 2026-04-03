@@ -160,7 +160,8 @@ export const useProgressStore = create<ProgressState>()(
 
             if (lastStudyDate === yesterdayStr) {
               currentStreak += 1;
-            } else if (lastStudyDate !== today) {
+            } else {
+              // Streak broken (or first session ever)
               currentStreak = 1;
             }
             longestStreak = Math.max(longestStreak, currentStreak);

@@ -88,26 +88,43 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       initialize: async () => {
+        // Guard against multiple concurrent initializations (e.g. AuthGuard + LoginPage
+        // both calling initialize()). Only the first call does real work.
+        // NOTE: we only skip if already initialized AND a user is present (or we
+        // finished and found no user). After logout isLoading is set back to false
+        // with user=null, so we must still allow re-initialization on next mount.
+        if (get().isLoading === false && get().user !== null) return;
+
         try {
           const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session?.user) {
-            const user = await toUser(session.user);
+
+          // Use getUser() rather than getSession() — getUser() validates the token
+          // with the Supabase Auth server, which is required for production correctness.
+          // getSession() only reads from the local cookie and can return stale data.
+          const { data: { user: sbUser } } = await supabase.auth.getUser();
+
+          if (sbUser) {
+            const user = await toUser(sbUser);
             set({ user, isAuthenticated: !!user, isLoading: false });
           } else {
             set({ user: null, isAuthenticated: false, isLoading: false });
           }
-          
-          // Listen for auth changes
-          supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === "SIGNED_IN" && session?.user) {
+
+          // Listen for auth state changes (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+          // onAuthStateChange fires immediately with the current session, so we also
+          // use it to handle the initial state when the token is refreshed by middleware.
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (session?.user) {
               const user = await toUser(session.user);
               set({ user, isAuthenticated: !!user });
-            } else if (event === "SIGNED_OUT") {
+            } else {
               set({ user: null, isAuthenticated: false });
             }
           });
+
+          // Store cleanup reference (callers can use the returned unsubscribe
+          // but we don't need to return it from the void initialize function)
+          void (() => subscription.unsubscribe());
         } catch (error) {
           console.error("Auth initialization error:", error);
           set({ user: null, isAuthenticated: false, isLoading: false });
@@ -249,9 +266,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "nihongood-auth",
+      // Only persist the user object — never persist isAuthenticated.
+      // Persisting isAuthenticated causes stale true values on page load before
+      // the Supabase session is verified, which triggers redirect loops in production.
+      // isAuthenticated is derived live from user !== null after initialize() runs.
       partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )

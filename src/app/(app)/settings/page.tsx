@@ -26,16 +26,16 @@ export default function SettingsPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: "var(--text-primary)" }}>
           <span>⚙️</span> Settings
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
           Customize your learning experience
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/5 pb-2">
+      <div className="flex gap-2 pb-2" style={{ borderBottom: "2px solid var(--border-color)" }}>
         {(["experience", "srs", "interface"] as const).map((tab) => (
           <button
             key={tab}
@@ -43,8 +43,9 @@ export default function SettingsPage() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === tab
                 ? "bg-sakura-500/20 text-sakura-400"
-                : "text-slate-400 hover:text-slate-300 hover:bg-white/5"
+                : ""
             }`}
+            style={activeTab !== tab ? { color: "var(--text-secondary)" } : {}}
           >
             {tab === "experience" ? "Experience Level" : 
              tab === "srs" ? "SRS Settings" : "Interface"}
@@ -134,8 +135,8 @@ function ExperienceLevelSettings() {
   return (
     <div className="space-y-6">
       <div className="glass-card p-6">
-        <h2 className="text-lg font-bold text-slate-100 mb-4">Experience Level</h2>
-        <p className="text-sm text-slate-400 mb-6">
+        <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>Experience Level</h2>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
           Choose how much detail and control you want. This affects which features are visible 
           and how information is presented.
         </p>
@@ -148,16 +149,16 @@ function ExperienceLevelSettings() {
               className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                 experienceLevel === level.id
                   ? "border-sakura-400 bg-sakura-500/10"
-                  : "border-white/10 hover:border-white/20 bg-white/5"
+                  : ""
               }`}
+              style={experienceLevel !== level.id ? { borderColor: "var(--border-color)", background: "var(--bg-secondary)" } : {}}
             >
               <div className="flex items-start gap-4">
                 <span className="text-3xl">{level.icon}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className={`font-bold ${
-                      experienceLevel === level.id ? "text-sakura-400" : "text-slate-200"
-                    }`}>
+                    <p className={`font-bold ${experienceLevel === level.id ? "text-sakura-400" : ""}`}
+                       style={experienceLevel !== level.id ? { color: "var(--text-primary)" } : {}}>
                       {level.title}
                     </p>
                     {experienceLevel === level.id && (
@@ -166,10 +167,10 @@ function ExperienceLevelSettings() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-400 mt-1">{level.description}</p>
+                  <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{level.description}</p>
                   <ul className="mt-3 space-y-1">
                     {level.features.map((feature, i) => (
-                      <li key={i} className="text-xs text-slate-500 flex items-center gap-2">
+                      <li key={i} className="text-xs flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                         <span className="text-teal-400">•</span>
                         {feature}
                       </li>
@@ -185,28 +186,29 @@ function ExperienceLevelSettings() {
       {/* Unlock Progress */}
       {experienceLevel === "beginner" && (
         <div className="glass-card p-6">
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--text-secondary)" }}>
             Your Progress
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Reviews Completed</span>
+              <span className="text-sm" style={{ color: "var(--text-primary)" }}>Reviews Completed</span>
               <span className="text-sm font-bold text-gold-400">{onboarding.totalReviewsCompleted}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Days Active</span>
+              <span className="text-sm" style={{ color: "var(--text-primary)" }}>Days Active</span>
               <span className="text-sm font-bold text-teal-400">{onboarding.daysActive}</span>
             </div>
-            <div className="border-t border-white/5 pt-4">
-              <p className="text-xs text-slate-500 mb-3">Feature Unlocks:</p>
+            <div className="pt-4" style={{ borderTop: "1px solid var(--border-color)" }}>
+              <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>Feature Unlocks:</p>
               {Object.entries(FEATURE_UNLOCKS).map(([id, config]) => {
                 const unlocked = onboarding.totalReviewsCompleted >= config.reviews;
                 return (
                   <div key={id} className="flex items-center justify-between py-1">
-                    <span className={`text-sm ${unlocked ? "text-slate-300" : "text-slate-500"}`}>
+                    <span className="text-sm" style={{ color: unlocked ? "var(--text-primary)" : "var(--text-secondary)" }}>
                       {unlocked ? "✓" : "🔒"} {config.description}
                     </span>
-                    <span className={`text-xs ${unlocked ? "text-teal-400" : "text-slate-600"}`}>
+                    <span className={`text-xs ${unlocked ? "text-teal-400" : ""}`}
+                          style={!unlocked ? { color: "var(--text-secondary)" } : {}}>
                       {config.reviews} reviews
                     </span>
                   </div>
@@ -222,8 +224,8 @@ function ExperienceLevelSettings() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowConfirm(null)} />
           <div className="glass-card p-6 max-w-md w-full relative z-10 animate-scale-in">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">Change Experience Level?</h3>
-            <p className="text-sm text-slate-400 mb-4">
+            <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>Change Experience Level?</h3>
+            <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
               Switching to <span className="text-sakura-400 font-medium">{showConfirm}</span> will 
               update your interface settings to match that experience level.
             </p>
@@ -256,16 +258,16 @@ function SRSSettingsPanel() {
     <div className="space-y-6">
       {/* Basic Settings */}
       <div className="glass-card p-6">
-        <h2 className="text-lg font-bold text-slate-100 mb-4">Review Settings</h2>
+        <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>Review Settings</h2>
         
         <div className="space-y-6">
           {/* New Cards Per Day */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-slate-300 flex items-center gap-2">
+              <label className="text-sm flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
                 New Cards Per Day
                 <HelpTooltip content="How many new cards to introduce each day. Lower numbers help prevent overwhelm.">
-                  <span className="text-slate-500 cursor-help">ℹ️</span>
+                  <span className="cursor-help" style={{ color: "var(--text-secondary)" }}>ℹ️</span>
                 </HelpTooltip>
               </label>
               <span className="text-sm font-bold text-sakura-400">{srsSettings.newCardsPerDay}</span>
@@ -278,7 +280,7 @@ function SRSSettingsPanel() {
               onChange={(e) => updateSRSSettings({ newCardsPerDay: Number(e.target.value) })}
               className="w-full accent-sakura-400"
             />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <div className="flex justify-between text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
               <span>1</span>
               <span>Conservative: 5-10</span>
               <span>50</span>
@@ -288,10 +290,10 @@ function SRSSettingsPanel() {
           {/* Max Reviews Per Day */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-slate-300 flex items-center gap-2">
+              <label className="text-sm flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
                 Max Reviews Per Day
                 <HelpTooltip content="Limit daily reviews to prevent burnout. 0 means unlimited.">
-                  <span className="text-slate-500 cursor-help">ℹ️</span>
+                  <span className="cursor-help" style={{ color: "var(--text-secondary)" }}>ℹ️</span>
                 </HelpTooltip>
               </label>
               <span className="text-sm font-bold text-teal-400">
@@ -307,7 +309,7 @@ function SRSSettingsPanel() {
               onChange={(e) => updateSRSSettings({ maxReviewsPerDay: Number(e.target.value) })}
               className="w-full accent-teal-400"
             />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <div className="flex justify-between text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
               <span>Unlimited</span>
               <span>Recommended: 50-100</span>
               <span>200</span>
@@ -315,10 +317,10 @@ function SRSSettingsPanel() {
           </div>
 
           {/* Easy Button Toggle */}
-          <div className="flex items-center justify-between py-3 border-t border-white/5">
+          <div className="flex items-center justify-between py-3" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">Enable &quot;Easy&quot; Button</p>
-              <p className="text-xs text-slate-500 mt-0.5">Show 4 rating buttons instead of 3</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Enable &quot;Easy&quot; Button</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Show 4 rating buttons instead of 3</p>
             </div>
             <ToggleSwitch
               enabled={srsSettings.enableEasyButton}
@@ -331,9 +333,9 @@ function SRSSettingsPanel() {
       {/* Advanced Settings */}
       <div className={`glass-card p-6 ${!canAccessAdvanced ? "opacity-50" : ""}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-100">Advanced Settings</h2>
+          <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Advanced Settings</h2>
           {!canAccessAdvanced && (
-            <span className="text-xs px-2 py-1 rounded-full bg-navy-800 text-slate-500">
+            <span className="text-xs px-2 py-1 rounded-full" style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)" }}>
               🔒 {FEATURE_UNLOCKS.advancedSettings.reviews} reviews to unlock
             </span>
           )}
@@ -343,8 +345,8 @@ function SRSSettingsPanel() {
           {/* Show Interval Predictions */}
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="text-sm text-slate-300">Show Interval Predictions</p>
-              <p className="text-xs text-slate-500 mt-0.5">Display next review date on rating buttons</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Show Interval Predictions</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Display next review date on rating buttons</p>
             </div>
             <ToggleSwitch
               enabled={srsSettings.showIntervalPredictions}
@@ -354,10 +356,10 @@ function SRSSettingsPanel() {
           </div>
 
           {/* Show Ease Factor */}
-          <div className="flex items-center justify-between py-2 border-t border-white/5">
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">Show Ease Factor</p>
-              <p className="text-xs text-slate-500 mt-0.5">Display card difficulty percentage</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Show Ease Factor</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Display card difficulty percentage</p>
             </div>
             <ToggleSwitch
               enabled={srsSettings.showEaseFactor}
@@ -367,10 +369,10 @@ function SRSSettingsPanel() {
           </div>
 
           {/* Auto Advance */}
-          <div className="flex items-center justify-between py-2 border-t border-white/5">
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">Auto-Advance After Rating</p>
-              <p className="text-xs text-slate-500 mt-0.5">Automatically move to next card</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Auto-Advance After Rating</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Automatically move to next card</p>
             </div>
             <ToggleSwitch
               enabled={srsSettings.autoAdvance}
@@ -383,7 +385,7 @@ function SRSSettingsPanel() {
           {srsSettings.autoAdvance && canAccessAdvanced && (
             <div className="pl-4 border-l-2 border-sakura-500/30">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm text-slate-400">Delay (ms)</label>
+                <label className="text-sm" style={{ color: "var(--text-secondary)" }}>Delay (ms)</label>
                 <span className="text-sm font-bold text-sakura-400">{srsSettings.autoAdvanceDelay}ms</span>
               </div>
               <input
@@ -409,14 +411,14 @@ function InterfaceSettings() {
   return (
     <div className="space-y-6">
       <div className="glass-card p-6">
-        <h2 className="text-lg font-bold text-slate-100 mb-4">Interface Preferences</h2>
+        <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>Interface Preferences</h2>
         
         <div className="space-y-4">
           {/* Show Detailed Stats */}
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="text-sm text-slate-300">Show Detailed Statistics</p>
-              <p className="text-xs text-slate-500 mt-0.5">Display comprehensive learning metrics</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Show Detailed Statistics</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Display comprehensive learning metrics</p>
             </div>
             <ToggleSwitch
               enabled={uiPreferences.showDetailedStats}
@@ -425,10 +427,10 @@ function InterfaceSettings() {
           </div>
 
           {/* Show Card Status Bar */}
-          <div className="flex items-center justify-between py-2 border-t border-white/5">
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">Card Status Bar</p>
-              <p className="text-xs text-slate-500 mt-0.5">Show card status during reviews</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Card Status Bar</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Show card status during reviews</p>
             </div>
             <ToggleSwitch
               enabled={uiPreferences.showCardStatusBar}
@@ -437,10 +439,10 @@ function InterfaceSettings() {
           </div>
 
           {/* Show Why This Card */}
-          <div className="flex items-center justify-between py-2 border-t border-white/5">
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">&quot;Why This Card?&quot; Button</p>
-              <p className="text-xs text-slate-500 mt-0.5">Explain why each card appears</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>&quot;Why This Card?&quot; Button</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Explain why each card appears</p>
             </div>
             <ToggleSwitch
               enabled={uiPreferences.showWhyThisCard}
@@ -449,10 +451,10 @@ function InterfaceSettings() {
           </div>
 
           {/* Show Algorithm Explanations */}
-          <div className="flex items-center justify-between py-2 border-t border-white/5">
+          <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
             <div>
-              <p className="text-sm text-slate-300">Algorithm Explanations</p>
-              <p className="text-xs text-slate-500 mt-0.5">Show how SRS decisions are made</p>
+              <p className="text-sm" style={{ color: "var(--text-primary)" }}>Algorithm Explanations</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Show how SRS decisions are made</p>
             </div>
             <ToggleSwitch
               enabled={uiPreferences.showAlgorithmExplanations}
@@ -462,10 +464,10 @@ function InterfaceSettings() {
 
           {/* Compact Mode */}
           {experienceLevel === "advanced" && (
-            <div className="flex items-center justify-between py-2 border-t border-white/5">
+            <div className="flex items-center justify-between py-2" style={{ borderTop: "1px solid var(--border-color)" }}>
               <div>
-                <p className="text-sm text-slate-300">Compact Mode</p>
-                <p className="text-xs text-slate-500 mt-0.5">Reduce spacing for experienced users</p>
+                <p className="text-sm" style={{ color: "var(--text-primary)" }}>Compact Mode</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Reduce spacing for experienced users</p>
               </div>
               <ToggleSwitch
                 enabled={uiPreferences.compactMode}
@@ -475,18 +477,19 @@ function InterfaceSettings() {
           )}
 
           {/* Animation Level */}
-          <div className="pt-4 border-t border-white/5">
-            <label className="text-sm text-slate-300 block mb-3">Animation Level</label>
+          <div className="pt-4" style={{ borderTop: "1px solid var(--border-color)" }}>
+            <label className="text-sm block mb-3" style={{ color: "var(--text-primary)" }}>Animation Level</label>
             <div className="grid grid-cols-3 gap-2">
               {(["full", "reduced", "none"] as const).map((level) => (
                 <button
                   key={level}
                   onClick={() => updateUIPreferences({ animationLevel: level })}
-                  className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                  className={`px-3 py-2 rounded-lg text-sm transition-all border ${
                     uiPreferences.animationLevel === level
-                      ? "bg-sakura-500/20 text-sakura-400 border border-sakura-500/30"
-                      : "bg-white/5 text-slate-400 border border-transparent hover:bg-white/10"
+                      ? "bg-sakura-500/20 text-sakura-400 border-sakura-500/30"
+                      : ""
                   }`}
+                  style={uiPreferences.animationLevel !== level ? { borderColor: "var(--border-color)", color: "var(--text-secondary)", background: "var(--bg-secondary)" } : {}}
                 >
                   {level.charAt(0).toUpperCase() + level.slice(1)}
                 </button>
@@ -498,10 +501,10 @@ function InterfaceSettings() {
 
       {/* Reset to Defaults */}
       <div className="glass-card p-6">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-secondary)" }}>
           Reset Options
         </h3>
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
           Reset interface settings to the defaults for your experience level.
         </p>
         <button
@@ -534,12 +537,9 @@ function ToggleSwitch({
       onClick={() => !disabled && onChange(!enabled)}
       disabled={disabled}
       className={`relative w-12 h-6 rounded-full transition-all ${
-        disabled 
-          ? "bg-navy-800 cursor-not-allowed" 
-          : enabled 
-          ? "bg-sakura-500" 
-          : "bg-navy-700 hover:bg-navy-600"
-      }`}
+        enabled && !disabled ? "bg-sakura-500" : ""
+      } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+      style={!enabled || disabled ? { background: "var(--border-dark, #afafaf)" } : {}}
     >
       <span
         className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${

@@ -22,11 +22,22 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse glass-card p-8">
-            <div className="text-4xl mb-4">🎌</div>
-            <p className="text-slate-400">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--bg-secondary, #f7f7f7)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black text-white animate-bounce"
+            style={{ background: "#ff4b8b", boxShadow: "0 5px 0 #e0357a" }}
+          >
+            日
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full animate-bounce"
+                style={{ background: "#ff4b8b", animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
           </div>
         </div>
       </div>

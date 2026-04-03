@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
-import { useProgressStore } from "@/store/progressStore";
+import { useProgressStore, ALL_BADGES } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
 import { useLearningStore } from "@/store/learningStore";
 import { useEffect, useState } from "react";
@@ -19,7 +19,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    // Check badges whenever dashboard loads
     progress.checkBadges({
       totalReviews: progress.totalReviews,
       streak: progress.currentStreak,
@@ -35,7 +34,8 @@ export default function DashboardPage() {
       totalXP: progress.totalXP,
       level: progress.level,
     });
-  }, [mounted]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, progress.totalReviews, progress.currentStreak, progress.totalXP, progress.level]);
 
   if (!mounted) return <DashboardSkeleton />;
 
@@ -47,152 +47,182 @@ export default function DashboardPage() {
   const grammarProgress = learning.getGrammarProgress();
   const xpForNext = progress.getXPForNextLevel();
 
-  // Daily tasks
   const dailyTasks = [
-    { label: `Review ${cardCount.due} due cards`, done: cardCount.due === 0, href: "/review", icon: "🔄" },
-    { label: "Learn new vocabulary", done: vocabProgress >= 100, href: "/learn/vocab", icon: "📖" },
-    { label: "Study a grammar point", done: grammarProgress >= 100, href: "/learn/grammar", icon: "📝" },
-    { label: "Practice kana", done: kanaMastery >= 100, href: "/learn/kana", icon: "あ" },
+    { label: "Review due cards", count: cardCount.due, done: cardCount.due === 0, href: "/review",       icon: "🔄", color: "#ff4b4b" },
+    { label: "Learn vocabulary",  count: null,          done: vocabProgress >= 100,   href: "/learn/vocab",   icon: "📖", color: "#ce82ff" },
+    { label: "Study grammar",     count: null,          done: grammarProgress >= 100, href: "/learn/grammar", icon: "📝", color: "#1cb0f6" },
+    { label: "Practice kana",     count: null,          done: kanaMastery >= 100,     href: "/learn/kana",    icon: "あ", color: "#ff86d0" },
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 animate-fade-in pb-8">
+
+      {/* ── GREETING HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">
-            Welcome back, <span className="text-gradient-sakura">{user?.name}</span> 👋
-          </h1>
-          <p className="text-slate-400 mt-1">
-            {progress.currentStreak > 0
-              ? `🔥 ${progress.currentStreak} day streak! Keep it going!`
-              : "Start studying to begin your streak!"}
+          <p className="text-sm font-bold uppercase tracking-widest" style={{ color: "#ff4b8b" }}>
+            {progress.currentStreak > 0 ? `🔥 ${progress.currentStreak} day streak!` : "Let's get started!"}
           </p>
+          <h1 className="text-3xl font-black mt-0.5" style={{ color: "var(--text-primary)" }}>
+            Hey, {user?.name?.split(" ")[0]} 👋
+          </h1>
         </div>
-        <Link href="/review" className="btn-primary flex items-center gap-2 w-fit" id="start-review-btn">
-          <span>🔄</span>
-          <span>Start Review {cardCount.due > 0 && `(${cardCount.due})`}</span>
+        <Link
+          href="/review"
+          className="btn-primary w-fit"
+          id="start-review-btn"
+        >
+          {cardCount.due > 0 ? `🔄 Review (${cardCount.due})` : "🔄 Start Review"}
         </Link>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Level"
-          value={progress.level.toString()}
-          sub={`${xpForNext} XP to next`}
-          gradient="from-sakura-500 to-sakura-600"
-          icon="⚡"
-        />
-        <StatCard
-          label="Total XP"
-          value={progress.totalXP.toString()}
-          sub={`${todayLog.xpEarned} earned today`}
-          gradient="from-gold-400 to-gold-500"
-          icon="💎"
-        />
-        <StatCard
-          label="Streak"
-          value={`${progress.currentStreak}d`}
-          sub={`Best: ${progress.longestStreak}d`}
-          gradient="from-orange-400 to-red-500"
-          icon="🔥"
-        />
-        <StatCard
-          label="Cards"
-          value={cardCount.total.toString()}
-          sub={`${cardCount.due} due now`}
-          gradient="from-teal-400 to-teal-500"
-          icon="🃏"
-        />
+      {/* ── XP LEVEL BAR ── */}
+      <div className="duo-card p-4 flex items-center gap-4">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black text-white flex-shrink-0"
+          style={{ background: "#ff4b8b", boxShadow: "0 4px 0 #e0357a" }}
+        >
+          {progress.level}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm font-black" style={{ color: "var(--text-primary)" }}>
+              Level {progress.level}
+            </span>
+            <span className="text-xs font-bold" style={{ color: "var(--text-secondary)" }}>
+              {xpForNext} XP to next
+            </span>
+          </div>
+          <div className="progress-bar">
+            <div
+              className="progress-bar-fill"
+              style={{
+                width: `${Math.min(100, ((progress.totalXP % 500) / 500) * 100)}%`,
+                background: "linear-gradient(90deg, #ff4b8b, #ff79a8)",
+              }}
+            />
+          </div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-xl font-black" style={{ color: "#1cb0f6" }}>{progress.totalXP}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>Total XP</p>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Progress Section */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Mastery Progress */}
-          <div className="glass-card p-6">
-            <h2 className="section-title mb-6">
-              <span>📊</span> Learning Progress
-            </h2>
-            <div className="space-y-5">
-              <ProgressRow label="Kana Mastery" value={kanaMastery} color="bg-sakura-400" href="/learn/kana" />
-              <ProgressRow label="Vocabulary" value={vocabProgress} color="bg-teal-400" href="/learn/vocab" />
-              <ProgressRow label="Grammar" value={grammarProgress} color="bg-gold-400" href="/learn/grammar" />
+      {/* ── STAT CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Streak"    value={`${progress.currentStreak}d`} sub={`Best: ${progress.longestStreak}d`} emoji="🔥" color="#ff9600" shadow="#e08000" />
+        <StatCard label="XP Today"  value={todayLog.xpEarned.toString()}  sub="earned today"                       emoji="⚡" color="#1cb0f6" shadow="#0a91d1" />
+        <StatCard label="Due Cards" value={cardCount.due.toString()}       sub={`${cardCount.total} total`}         emoji="🃏" color="#ff4b4b" shadow="#d93636" />
+        <StatCard label="Reviews"   value={progress.totalReviews.toString()} sub="all time"                        emoji="🏆" color="#ce82ff" shadow="#a560d8" />
+      </div>
+
+      {/* ── MAIN GRID ── */}
+      <div className="grid lg:grid-cols-3 gap-5">
+
+        {/* Left col: progress + activity */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Learning paths */}
+          <div className="duo-card p-5">
+            <h2 className="section-title mb-5">📊 Learning Progress</h2>
+            <div className="space-y-4">
+              <ProgressRow label="Kana Mastery" value={kanaMastery}    color="#1cb0f6" href="/learn/kana"    emoji="あ" />
+              <ProgressRow label="Vocabulary"   value={vocabProgress}  color="#ce82ff" href="/learn/vocab"   emoji="📖" />
+              <ProgressRow label="Grammar"      value={grammarProgress} color="#ff9600" href="/learn/grammar" emoji="📝" />
             </div>
           </div>
 
-          {/* Weekly Activity Chart */}
-          <ActivityChart data={weeklyActivity} />
+          {/* Activity chart */}
+          <div className="duo-card p-5">
+            <ActivityChart data={weeklyActivity} />
+          </div>
         </div>
 
-        {/* Sidebar: Daily Tasks + Quick Actions */}
-        <div className="space-y-6">
-          {/* Daily Tasks */}
-          <div className="glass-card p-6">
-            <h2 className="section-title mb-4">
-              <span>📋</span> Today&apos;s Plan
-            </h2>
-            <div className="space-y-3">
+        {/* Right col: tasks + quick actions + badges */}
+        <div className="space-y-5">
+
+          {/* Daily tasks */}
+          <div className="duo-card p-5">
+            <h2 className="section-title mb-4">📋 Today&apos;s Plan</h2>
+            <div className="space-y-2.5">
               {dailyTasks.map((task, i) => (
                 <Link
                   key={i}
                   href={task.href}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                  className="flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-150 group"
+                  style={
                     task.done
-                      ? "bg-teal-500/10 border border-teal-500/20"
-                      : "bg-navy-800/40 border border-white/5 hover:border-sakura-400/20 hover:bg-sakura-500/5"
-                  }`}
+                      ? { background: "rgba(88,204,2,0.07)", borderColor: "rgba(88,204,2,0.3)" }
+                      : { background: "var(--bg-secondary)", borderColor: "var(--border-color)" }
+                  }
                 >
-                  <span className="text-lg">{task.done ? "✅" : task.icon}</span>
-                  <span className={`text-sm font-medium ${task.done ? "text-teal-400 line-through" : "text-slate-300"}`}>
+                  <span
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ background: task.done ? "rgba(88,204,2,0.15)" : `${task.color}15` }}
+                  >
+                    {task.done ? "✅" : task.icon}
+                  </span>
+                  <span
+                    className="text-sm font-bold flex-1"
+                    style={{ color: task.done ? "#ff4b8b" : "var(--text-primary)", textDecoration: task.done ? "line-through" : "none" }}
+                  >
                     {task.label}
                   </span>
+                  {task.count !== null && task.count > 0 && (
+                    <span className="text-xs font-black text-white px-2 py-0.5 rounded-full" style={{ background: task.color }}>
+                      {task.count}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="glass-card p-6">
-            <h2 className="section-title mb-4">
-              <span>⚡</span> Quick Start
-            </h2>
-            <div className="space-y-2">
-              <Link href="/learn/kana" className="block w-full btn-secondary text-center text-sm" id="quick-kana">
-                🎌 Learn Kana
-              </Link>
-              <Link href="/learn/vocab" className="block w-full btn-secondary text-center text-sm" id="quick-vocab">
-                📖 Study Vocab
-              </Link>
-              <Link href="/review" className="block w-full btn-secondary text-center text-sm" id="quick-review">
-                🔄 Review Cards
-              </Link>
+          {/* Quick actions */}
+          <div className="duo-card p-5">
+            <h2 className="section-title mb-4">⚡ Quick Start</h2>
+            <div className="space-y-2.5">
+              <QuickAction href="/learn/kana"    label="Learn Kana"    emoji="あ" color="#ff86d0" shadow="#e060b0" id="quick-kana" />
+              <QuickAction href="/learn/kanji"   label="Learn Kanji"   emoji="漢" color="#ff9600" shadow="#e08000" id="quick-kanji" />
+              <QuickAction href="/flashcards"    label="Flashcards"    emoji="🃏" color="#ffc800" shadow="#e0a800" id="quick-flash" />
+              <QuickAction href="/learn/vocab"   label="Study Vocab"   emoji="📖" color="#ce82ff" shadow="#a560d8" id="quick-vocab" />
+              <QuickAction href="/review"        label="Review Cards"  emoji="🔄" color="#ff4b8b" shadow="#e0357a" id="quick-review" />
             </div>
           </div>
 
-          {/* Badges preview */}
-          <div className="glass-card p-6">
+          {/* Badges */}
+          <div className="duo-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="section-title text-base">
-                <span>🏆</span> Badges
-              </h2>
-              <Link href="/profile" className="text-xs text-sakura-400 hover:text-sakura-300">View all →</Link>
+              <h2 className="section-title text-base">🏆 Badges</h2>
+              <Link href="/profile" className="text-xs font-bold" style={{ color: "#1cb0f6" }}>
+                View all →
+              </Link>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {progress.unlockedBadges.length === 0 ? (
-                <p className="text-sm text-slate-500">Start learning to earn badges!</p>
-              ) : (
-                progress.unlockedBadges.slice(0, 6).map((id) => {
-                  const badge = require("@/store/progressStore").ALL_BADGES.find((b: { id: string }) => b.id === id);
+            {progress.unlockedBadges.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-3xl mb-2">🎯</p>
+                <p className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>
+                  Start learning to earn badges!
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {progress.unlockedBadges.slice(0, 6).map((id) => {
+                  const badge = ALL_BADGES.find((b) => b.id === id);
                   return badge ? (
-                    <div key={id} className="w-10 h-10 rounded-xl bg-gold-400/10 border border-gold-400/20 flex items-center justify-center text-lg" title={badge.name}>
+                    <div
+                      key={id}
+                      title={badge.name}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-xl border-2 transition-transform hover:scale-110"
+                      style={{ background: "rgba(255,200,0,0.1)", borderColor: "rgba(255,200,0,0.35)", boxShadow: "0 2px 0 rgba(255,200,0,0.4)" }}
+                    >
                       {badge.emoji}
                     </div>
                   ) : null;
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -200,56 +230,98 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, sub, gradient, icon }: {
-  label: string; value: string; sub: string; gradient: string; icon: string;
+/* ── Sub-components ── */
+
+function StatCard({ label, value, sub, emoji, color, shadow }: {
+  label: string; value: string; sub: string; emoji: string; color: string; shadow: string;
 }) {
   return (
-    <div className="glass-card-hover p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">{label}</span>
-        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-sm shadow-lg`}>
-          {icon}
-        </div>
+    <div
+      className="rounded-2xl p-4 border-2 flex flex-col gap-1.5"
+      style={{
+        background: "var(--bg-card)",
+        borderColor: `${color}35`,
+        boxShadow: `0 4px 0 ${shadow}30`,
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-black uppercase tracking-wider" style={{ color }}>
+          {label}
+        </span>
+        <span className="text-xl">{emoji}</span>
       </div>
-      <p className="text-2xl font-bold text-slate-100">{value}</p>
-      <p className="text-xs text-slate-500 mt-1">{sub}</p>
+      <p className="text-2xl font-black" style={{ color: "var(--text-primary)" }}>{value}</p>
+      <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{sub}</p>
     </div>
   );
 }
 
-function ProgressRow({ label, value, color, href }: {
-  label: string; value: number; color: string; href: string;
+function ProgressRow({ label, value, color, href, emoji }: {
+  label: string; value: number; color: string; href: string; emoji: string;
 }) {
   return (
     <Link href={href} className="block group">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">{label}</span>
-        <span className="text-sm font-bold text-slate-400">{value}%</span>
+      <div className="flex items-center gap-2 mb-2">
+        <span
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+          style={{ background: `${color}18` }}
+        >
+          {emoji}
+        </span>
+        <span className="text-sm font-bold flex-1" style={{ color: "var(--text-primary)" }}>
+          {label}
+        </span>
+        <span className="text-sm font-black" style={{ color }}>{value}%</span>
       </div>
-      <div className="progress-bar">
-        <div className={`progress-bar-fill ${color}`} style={{ width: `${value}%` }} />
+      <div className="progress-bar ml-9">
+        <div
+          className="progress-bar-fill"
+          style={{ width: `${value}%`, background: `linear-gradient(90deg, ${color}, ${color}bb)` }}
+        />
       </div>
+    </Link>
+  );
+}
+
+function QuickAction({ href, label, emoji, color, shadow, id }: {
+  href: string; label: string; emoji: string; color: string; shadow: string; id: string;
+}) {
+  return (
+    <Link
+      href={href}
+      id={id}
+      className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-150 hover:translate-y-[-1px] active:translate-y-[1px]"
+      style={{
+        background: `${color}10`,
+        borderColor: `${color}40`,
+        boxShadow: `0 3px 0 ${shadow}40`,
+        color,
+      }}
+    >
+      <span className="text-lg">{emoji}</span>
+      <span>{label}</span>
     </Link>
   );
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse">
-      <div className="h-12 bg-navy-800/40 rounded-xl w-2/3" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 animate-pulse pb-8">
+      <div className="h-14 rounded-2xl w-2/3" style={{ background: "var(--border-color)" }} />
+      <div className="h-16 duo-card rounded-2xl" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="glass-card p-5 h-28" />
+          <div key={i} className="h-24 rounded-2xl" style={{ background: "var(--bg-card)", border: "2px solid var(--border-color)" }} />
         ))}
       </div>
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card p-6 h-52" />
-          <div className="glass-card p-6 h-52" />
+      <div className="grid lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 space-y-5">
+          <div className="h-52 duo-card" />
+          <div className="h-44 duo-card" />
         </div>
-        <div className="space-y-6">
-          <div className="glass-card p-6 h-64" />
-          <div className="glass-card p-6 h-40" />
+        <div className="space-y-5">
+          <div className="h-56 duo-card" />
+          <div className="h-36 duo-card" />
         </div>
       </div>
     </div>

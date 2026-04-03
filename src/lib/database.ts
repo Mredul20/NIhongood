@@ -86,10 +86,13 @@ export const db = {
 
   async upsertSRSCard(userId: string, card: Partial<SRSCard> & { id: string }) {
     const supabase = createClient();
+    // Normalise type: 'kanji' maps to 'vocab' for DB compat until migration runs
+    const safeType = card.type === 'kanji' ? 'vocab' : card.type;
     const { data, error } = await supabase
       .from('srs_cards')
       .upsert({
         ...card,
+        type: safeType,
         user_id: userId,
       })
       .select()
@@ -115,6 +118,8 @@ export const db = {
     const supabase = createClient();
     const cardsWithUserId = cards.map(card => ({
       ...card,
+      // Normalise type: 'kanji' maps to 'vocab' for DB compat until migration runs
+      type: card.type === 'kanji' ? 'vocab' : card.type,
       user_id: userId,
     }));
     
@@ -203,11 +208,14 @@ export const db = {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('daily_logs')
-      .upsert({
-        user_id: userId,
-        date,
-        ...updates,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          date,
+          ...updates,
+        },
+        { onConflict: 'user_id,date' }
+      )
       .select()
       .single();
     
@@ -235,12 +243,15 @@ export const db = {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('review_history')
-      .upsert({
-        user_id: userId,
-        date,
-        correct,
-        total,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          date,
+          correct,
+          total,
+        },
+        { onConflict: 'user_id,date' }
+      )
       .select()
       .single();
     

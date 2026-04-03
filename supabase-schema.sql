@@ -59,7 +59,7 @@ create table public.srs_cards (
   front text not null,
   back text not null,
   reading text,
-  type text not null check (type in ('kana', 'vocab', 'grammar')),
+  type text not null check (type in ('kana', 'vocab', 'grammar', 'kanji')),
   interval integer default 0,
   ease_factor numeric(4,2) default 2.5,
   next_review timestamp with time zone default timezone('utc'::text, now()),

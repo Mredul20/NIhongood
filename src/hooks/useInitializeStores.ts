@@ -71,7 +71,10 @@ export function useSyncStores() {
 
     const interval = setInterval(syncAllStores, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user, syncProgress, syncSRS, syncLearning, syncPreferences]);
+  // syncAllStores is defined inline above and depends on the same stable store
+  // selectors — listing those directly avoids the stale-closure problem.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, syncProgress, syncSRS, syncLearning, syncPreferences, syncAllStores]);
 
   // Return the function so it can be called manually
   return syncAllStores;

@@ -18,11 +18,28 @@ export const VOCABULARY: VocabWord[] = [
   { id: "v5", kanji: "さようなら", hiragana: "さようなら", english: "Goodbye", partOfSpeech: "expression", level: "N5", example: { ja: "さようなら、また明日。", en: "Goodbye, see you tomorrow." }, category: "greetings" },
 
   // Numbers
-  { id: "v6", kanji: "一", hiragana: "いち", english: "One", partOfSpeech: "number", level: "N5", example: { ja: "一つください。", en: "One please." }, category: "numbers" },
-  { id: "v7", kanji: "二", hiragana: "に", english: "Two", partOfSpeech: "number", level: "N5", example: { ja: "二人です。", en: "It's two people." }, category: "numbers" },
-  { id: "v8", kanji: "三", hiragana: "さん", english: "Three", partOfSpeech: "number", level: "N5", example: { ja: "三時に会いましょう。", en: "Let's meet at three o'clock." }, category: "numbers" },
-  { id: "v9", kanji: "百", hiragana: "ひゃく", english: "Hundred", partOfSpeech: "number", level: "N5", example: { ja: "百円です。", en: "It's 100 yen." }, category: "numbers" },
+  { id: "v6",  kanji: "一", hiragana: "いち", english: "One", partOfSpeech: "number", level: "N5", example: { ja: "一つください。", en: "One please." }, category: "numbers" },
+  { id: "v7",  kanji: "二", hiragana: "に", english: "Two", partOfSpeech: "number", level: "N5", example: { ja: "二人です。", en: "It's two people." }, category: "numbers" },
+  { id: "v8",  kanji: "三", hiragana: "さん", english: "Three", partOfSpeech: "number", level: "N5", example: { ja: "三時に会いましょう。", en: "Let's meet at three o'clock." }, category: "numbers" },
+  { id: "v8b", kanji: "四", hiragana: "し/よん", english: "Four", partOfSpeech: "number", level: "N5", example: { ja: "四人家族です。", en: "We are a family of four." }, category: "numbers" },
+  { id: "v8c", kanji: "五", hiragana: "ご", english: "Five", partOfSpeech: "number", level: "N5", example: { ja: "五分待ってください。", en: "Please wait five minutes." }, category: "numbers" },
+  { id: "v8d", kanji: "六", hiragana: "ろく", english: "Six", partOfSpeech: "number", level: "N5", example: { ja: "六時に起きます。", en: "I wake up at six o'clock." }, category: "numbers" },
+  { id: "v8e", kanji: "七", hiragana: "しち/なな", english: "Seven", partOfSpeech: "number", level: "N5", example: { ja: "七日間旅行します。", en: "I travel for seven days." }, category: "numbers" },
+  { id: "v8f", kanji: "八", hiragana: "はち", english: "Eight", partOfSpeech: "number", level: "N5", example: { ja: "八時に始まります。", en: "It starts at eight o'clock." }, category: "numbers" },
+  { id: "v8g", kanji: "九", hiragana: "く/きゅう", english: "Nine", partOfSpeech: "number", level: "N5", example: { ja: "九月に日本へ行きます。", en: "I'm going to Japan in September." }, category: "numbers" },
+  { id: "v8h", kanji: "十", hiragana: "じゅう", english: "Ten", partOfSpeech: "number", level: "N5", example: { ja: "十個買いました。", en: "I bought ten of them." }, category: "numbers" },
+  { id: "v8i", kanji: "十一", hiragana: "じゅういち", english: "Eleven", partOfSpeech: "number", level: "N5", example: { ja: "十一時に寝ます。", en: "I go to sleep at eleven." }, category: "numbers" },
+  { id: "v8j", kanji: "十二", hiragana: "じゅうに", english: "Twelve", partOfSpeech: "number", level: "N5", example: { ja: "十二月はクリスマスです。", en: "December is Christmas." }, category: "numbers" },
+  { id: "v8k", kanji: "二十", hiragana: "にじゅう", english: "Twenty", partOfSpeech: "number", level: "N5", example: { ja: "二十歳になりました。", en: "I turned twenty years old." }, category: "numbers" },
+  { id: "v8l", kanji: "三十", hiragana: "さんじゅう", english: "Thirty", partOfSpeech: "number", level: "N5", example: { ja: "三十分かかります。", en: "It takes thirty minutes." }, category: "numbers" },
+  { id: "v8m", kanji: "五十", hiragana: "ごじゅう", english: "Fifty", partOfSpeech: "number", level: "N5", example: { ja: "五十円のお釣りです。", en: "Here is 50 yen change." }, category: "numbers" },
+  { id: "v9",  kanji: "百", hiragana: "ひゃく", english: "Hundred", partOfSpeech: "number", level: "N5", example: { ja: "百円です。", en: "It's 100 yen." }, category: "numbers" },
+  { id: "v9b", kanji: "二百", hiragana: "にひゃく", english: "Two hundred", partOfSpeech: "number", level: "N5", example: { ja: "二百円かかります。", en: "It costs 200 yen." }, category: "numbers" },
+  { id: "v9c", kanji: "五百", hiragana: "ごひゃく", english: "Five hundred", partOfSpeech: "number", level: "N5", example: { ja: "五百円玉を持っています。", en: "I have a 500 yen coin." }, category: "numbers" },
   { id: "v10", kanji: "千", hiragana: "せん", english: "Thousand", partOfSpeech: "number", level: "N5", example: { ja: "千円札をください。", en: "Please give me a 1000 yen bill." }, category: "numbers" },
+  { id: "v10b", kanji: "一万", hiragana: "いちまん", english: "Ten thousand", partOfSpeech: "number", level: "N5", example: { ja: "一万円札です。", en: "It's a 10,000 yen bill." }, category: "numbers" },
+  { id: "v10c", kanji: "零", hiragana: "れい/ゼロ", english: "Zero", partOfSpeech: "number", level: "N5", example: { ja: "点数はゼロです。", en: "The score is zero." }, category: "numbers" },
+  { id: "v10d", kanji: "何", hiragana: "なん/なに", english: "What / How many", partOfSpeech: "pronoun", level: "N5", example: { ja: "何人いますか？", en: "How many people are there?" }, category: "numbers" },
 
   // People
   { id: "v11", kanji: "人", hiragana: "ひと", english: "Person", partOfSpeech: "noun", level: "N5", example: { ja: "あの人は先生です。", en: "That person is a teacher." }, category: "people" },
@@ -81,7 +98,7 @@ export const VOCABULARY: VocabWord[] = [
 
 export const VOCAB_CATEGORIES = [
   { id: "greetings", label: "Greetings", emoji: "👋", count: 5 },
-  { id: "numbers", label: "Numbers", emoji: "🔢", count: 5 },
+  { id: "numbers", label: "Numbers", emoji: "🔢", count: 23 },
   { id: "people", label: "People", emoji: "👥", count: 6 },
   { id: "time", label: "Time", emoji: "⏰", count: 4 },
   { id: "verbs", label: "Verbs", emoji: "🏃", count: 10 },
