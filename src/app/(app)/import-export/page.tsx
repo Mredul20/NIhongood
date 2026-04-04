@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { importCards, downloadExport, exportToCSV, exportToJSON } from '@/lib/importExport';
+import { importCardsFromFile, downloadExport, exportToCSV, exportToJSON } from '@/lib/importExport';
 import { useSRSStore } from '@/store/srsStore';
 import { useAuthStore } from '@/store/authStore';
 import { db } from '@/lib/database';
@@ -9,8 +9,9 @@ import { db } from '@/lib/database';
 export default function ImportExportPage() {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [importProgress, setImportProgress] = useState<{ imported: number; total: number } | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const { user } = useAuthStore();
   const { cards } = useSRSStore();
@@ -22,11 +23,12 @@ export default function ImportExportPage() {
 
     setIsLoading(true);
     setMessage(null);
+    setWarnings([]);
     setImportProgress(null);
 
     try {
-      const content = await file.text();
-      const result = await importCards(file.name, content);
+      // Use the unified importCardsFromFile which handles CSV, JSON, and APKG
+      const result = await importCardsFromFile(file);
 
       if (result.errors.length > 0 && result.cardsImported === 0) {
         setMessage({
@@ -37,14 +39,17 @@ export default function ImportExportPage() {
         return;
       }
 
-      // Import cards to database and store
+      if (result.warnings.length > 0) {
+        setWarnings(result.warnings);
+      }
+
+      // Import cards to database and local store
       setImportProgress({ imported: 0, total: result.importedCards.length });
 
       for (let i = 0; i < result.importedCards.length; i++) {
         const card = result.importedCards[i];
-        const id = `imported-${Date.now()}-${i}`;
+        const id = card.id ?? `imported-${Date.now()}-${i}`;
 
-        // Add to local store
         addCard({
           id,
           front: card.front,
@@ -53,7 +58,6 @@ export default function ImportExportPage() {
           type: card.type,
         });
 
-        // Sync to database
         await db.upsertSRSCard(user.id, {
           id,
           front: card.front,
@@ -65,9 +69,10 @@ export default function ImportExportPage() {
         setImportProgress({ imported: i + 1, total: result.importedCards.length });
       }
 
+      const skippedNote = result.cardsSkipped > 0 ? ` (${result.cardsSkipped} skipped due to errors)` : '';
       setMessage({
         type: 'success',
-        text: `Successfully imported ${result.cardsImported} cards${result.errors.length > 0 ? ` (${result.errors.length} errors skipped)` : ''}`,
+        text: `Successfully imported ${result.cardsImported} cards${skippedNote}`,
       });
     } catch (error) {
       setMessage({
@@ -118,15 +123,30 @@ export default function ImportExportPage() {
           <p className="text-slate-400">Manage your study cards with CSV, JSON, and Anki formats</p>
         </div>
 
+        {/* Status message */}
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg border ${
               message.type === 'success'
                 ? 'bg-emerald-900/30 border-emerald-500/50 text-emerald-300'
+                : message.type === 'warning'
+                ? 'bg-amber-900/30 border-amber-500/50 text-amber-300'
                 : 'bg-red-900/30 border-red-500/50 text-red-300'
             }`}
           >
             {message.text}
+          </div>
+        )}
+
+        {/* Warnings list */}
+        {warnings.length > 0 && (
+          <div className="mb-6 p-4 rounded-lg border bg-amber-900/20 border-amber-500/40 text-amber-300">
+            <p className="font-semibold mb-2">Warnings ({warnings.length}):</p>
+            <ul className="text-sm space-y-1 list-disc list-inside">
+              {warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -154,19 +174,32 @@ export default function ImportExportPage() {
           </button>
         </div>
 
-        {/* Import Tab */}
+        {/* ── Import Tab ── */}
         {activeTab === 'import' && (
           <div className="space-y-6">
             <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-slate-100 mb-4">Upload Cards</h2>
               <p className="text-slate-400 mb-4 text-sm">
-                Supported formats: CSV, JSON. Anki (APKG) coming soon.
+                Supported formats: <span className="text-sakura-400 font-medium">CSV</span>,{' '}
+                <span className="text-sakura-400 font-medium">JSON</span>, and{' '}
+                <span className="text-sakura-400 font-medium">Anki (.apkg)</span>.
               </p>
+
+              {/* Anki badge */}
+              <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-indigo-900/30 border border-indigo-500/40 rounded-lg text-indigo-300 text-sm">
+                <svg className="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <span>
+                  <strong>Anki import:</strong> APKG files are parsed entirely in your browser — your deck
+                  is never uploaded to a server.
+                </span>
+              </div>
 
               <div className="relative">
                 <input
                   type="file"
-                  accept=".csv,.json"
+                  accept=".csv,.json,.apkg,.colpkg"
                   onChange={handleFileUpload}
                   disabled={isLoading}
                   className="hidden"
@@ -174,37 +207,54 @@ export default function ImportExportPage() {
                 />
                 <label
                   htmlFor="file-input"
-                  className="block p-8 text-center border-2 border-dashed border-slate-600 rounded-lg cursor-pointer hover:border-sakura-500/50 hover:bg-slate-800/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`block p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
+                    isLoading
+                      ? 'border-slate-600 opacity-50 cursor-not-allowed'
+                      : 'border-slate-600 cursor-pointer hover:border-sakura-500/50 hover:bg-slate-800/30'
+                  }`}
                 >
-                  <svg
-                    className="mx-auto h-8 w-8 text-slate-400 mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <p className="text-slate-300">Drag files here or click to browse</p>
-                  <p className="text-xs text-slate-500 mt-2">CSV or JSON format</p>
+                  {isLoading ? (
+                    <>
+                      <svg className="mx-auto h-8 w-8 text-sakura-400 mb-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <p className="text-slate-300">Processing file…</p>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="mx-auto h-8 w-8 text-slate-400 mb-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                      <p className="text-slate-300">Drag files here or click to browse</p>
+                      <p className="text-xs text-slate-500 mt-2">CSV · JSON · Anki APKG</p>
+                    </>
+                  )}
                 </label>
               </div>
 
+              {/* Progress bar */}
               {importProgress && (
                 <div className="mt-4">
                   <div className="flex justify-between text-sm text-slate-400 mb-2">
-                    <span>Importing cards...</span>
+                    <span>Saving cards to your account…</span>
                     <span>
                       {importProgress.imported} / {importProgress.total}
                     </span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-sakura-400 to-sakura-600 transition-all"
+                      className="h-full bg-gradient-to-r from-sakura-400 to-sakura-600 transition-all duration-200"
                       style={{
                         width: `${(importProgress.imported / importProgress.total) * 100}%`,
                       }}
@@ -214,19 +264,27 @@ export default function ImportExportPage() {
               )}
             </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-slate-100 mb-4">CSV Format Example</h3>
-              <pre className="bg-slate-900 p-4 rounded text-xs text-slate-400 overflow-x-auto">
+            {/* Format reference cards */}
+            <div className="grid gap-4 md:grid-cols-1">
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+                <h3 className="font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                  <span className="text-xs font-mono bg-slate-700 px-2 py-0.5 rounded text-slate-300">CSV</span>
+                  CSV Format
+                </h3>
+                <pre className="bg-slate-900 p-4 rounded text-xs text-slate-400 overflow-x-auto">
 {`Front,Back,Reading,Type,Tags
 漢字,Kanji,かんじ,vocab,common;n5
-あ,Japanese hiragana character,あ,kana,hiragana
-です,To be (copula),です,grammar,present;formal`}
-              </pre>
-            </div>
+あ,Hiragana "a",,kana,hiragana
+です,To be (copula),,grammar,n5`}
+                </pre>
+              </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-              <h3 className="font-semibold text-slate-100 mb-4">JSON Format Example</h3>
-              <pre className="bg-slate-900 p-4 rounded text-xs text-slate-400 overflow-x-auto">
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+                <h3 className="font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                  <span className="text-xs font-mono bg-slate-700 px-2 py-0.5 rounded text-slate-300">JSON</span>
+                  JSON Format
+                </h3>
+                <pre className="bg-slate-900 p-4 rounded text-xs text-slate-400 overflow-x-auto">
 {`{
   "cards": [
     {
@@ -238,18 +296,33 @@ export default function ImportExportPage() {
     }
   ]
 }`}
-              </pre>
+                </pre>
+              </div>
+
+              <div className="bg-slate-800/50 border border-indigo-700/50 rounded-lg p-6">
+                <h3 className="font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                  <span className="text-xs font-mono bg-indigo-900/60 px-2 py-0.5 rounded text-indigo-300">APKG</span>
+                  Anki Deck (.apkg)
+                </h3>
+                <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
+                  <li>Export from Anki: <em>File → Export → Anki Deck Package (.apkg)</em></li>
+                  <li>Card type is auto-detected from content (kana / vocab / grammar)</li>
+                  <li>Tags are imported from Anki tag fields</li>
+                  <li>HTML formatting and LaTeX are stripped automatically</li>
+                  <li>Up to 500 cards per import (split large decks)</li>
+                </ul>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Export Tab */}
+        {/* ── Export Tab ── */}
         {activeTab === 'export' && (
           <div className="space-y-6">
             <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-slate-100 mb-4">Export Your Cards</h2>
               <p className="text-slate-400 mb-6 text-sm">
-                You have {cards.length} cards ready to export.
+                You have <span className="text-sakura-300 font-semibold">{cards.length}</span> cards ready to export.
               </p>
 
               <div className="flex gap-4">

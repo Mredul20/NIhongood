@@ -2,100 +2,141 @@
 
 This guide explains how to enable Google and GitHub OAuth authentication in your Supabase project.
 
-## Prerequisites
+## URLs Reference
 
-- Supabase project: https://mkcimanpcghmzqwievsz.supabase.co
-- Already configured: Email/password authentication
+| Environment | URL |
+|-------------|-----|
+| Production  | `https://nihongood.app` |
+| Local dev   | `http://localhost:3000` |
+| Supabase    | `https://mkcimanpcghmzqwievsz.supabase.co` |
+
+---
 
 ## Google OAuth Setup
 
-### Step 1: Create Google OAuth Credentials
+### Step 1: Create / Update Google OAuth Credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Navigate to **APIs & Services** > **Credentials**
-4. Click **Create Credentials** > **OAuth client ID**
-5. Select **Web application**
-6. In **Authorized JavaScript origins**, add:
-   - `http://localhost:3000`
-   - `http://localhost:3001`
-   - `https://mkcimanpcghmzqwievsz.supabase.co`
-7. In **Authorized redirect URIs**, add:
-   - `http://localhost:3000/auth/callback`
-   - `http://localhost:3001/auth/callback`
-   - `https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback`
-   - `https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback?provider=google`
-8. Copy your **Client ID** and **Client Secret**
+2. Navigate to **APIs & Services** → **Credentials** → select your OAuth client
+3. Under **Authorized JavaScript origins**, ensure these are listed:
+   ```
+   https://nihongood.app
+   http://localhost:3000
+   http://localhost:3001
+   ```
+4. Under **Authorized redirect URIs**, ensure these are listed:
+   ```
+   https://nihongood.app/auth/callback
+   http://localhost:3000/auth/callback
+   http://localhost:3001/auth/callback
+   https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback
+   ```
+5. Click **Save**
+6. Copy your **Client ID** and **Client Secret**
 
 ### Step 2: Configure in Supabase
 
-1. Go to [Supabase Dashboard](https://app.supabase.com/)
-2. Select your project
-3. Navigate to **Authentication** > **Providers**
-4. Click on **Google**
-5. Enable it with the toggle
-6. Paste your **Client ID** and **Client Secret**
-7. Click **Save**
+1. Go to [Supabase Dashboard](https://app.supabase.com/) → your project
+2. Navigate to **Authentication** → **Providers** → **Google**
+3. Enable with the toggle
+4. Paste your **Client ID** and **Client Secret**
+5. Click **Save**
+
+---
 
 ## GitHub OAuth Setup
 
-### Step 1: Create GitHub OAuth App
+### Step 1: Update GitHub OAuth App
 
-1. Go to [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers)
-2. Click **New OAuth App**
-3. Fill in:
-   - **Application name**: NIhongood
-   - **Homepage URL**: `http://localhost:3000`
-   - **Authorization callback URL**: `https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback?provider=github`
-4. Click **Register application**
-5. Copy your **Client ID**
-6. Click **Generate a new client secret** and copy it
+1. Go to [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers)
+2. Select your **NIhongood** app → **Edit**
+3. Set:
+   - **Homepage URL**: `https://nihongood.app`
+   - **Authorization callback URL**: `https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback`
+4. Click **Update application**
+5. Copy your **Client ID** and regenerate / copy **Client Secret**
 
 ### Step 2: Configure in Supabase
 
-1. Go to [Supabase Dashboard](https://app.supabase.com/)
-2. Select your project
-3. Navigate to **Authentication** > **Providers**
-4. Click on **GitHub**
-5. Enable it with the toggle
-6. Paste your **Client ID** and **Client Secret**
-7. Click **Save**
+1. Go to [Supabase Dashboard](https://app.supabase.com/) → your project
+2. Navigate to **Authentication** → **Providers** → **GitHub**
+3. Enable with the toggle
+4. Paste your **Client ID** and **Client Secret**
+5. Click **Save**
 
-## Local Testing
+---
 
-### Update Redirect URL
+## Supabase URL Configuration
 
-After setting up OAuth, test the flow:
+1. Go to [Supabase Dashboard](https://app.supabase.com/) → your project
+2. Navigate to **Authentication** → **URL Configuration**
+3. Set **Site URL**:
+   ```
+   https://nihongood.app
+   ```
+4. Under **Redirect URLs**, add both:
+   ```
+   https://nihongood.app/auth/callback
+   http://localhost:3000/auth/callback
+   ```
+5. Click **Save**
 
-1. Start the dev server: `npm run dev`
-2. Navigate to `http://localhost:3000/login`
-3. Click **Google** or **GitHub** button
-4. You should be redirected to the provider's login page
-5. After logging in, you'll be redirected back to the app
-6. Check that user profile is created and you're logged in
+---
 
-## Production Deployment
+## Vercel Environment Variables
 
-When deploying to production, you'll need to:
+Go to [vercel.com](https://vercel.com) → your project → **Settings** → **Environment Variables**
 
-1. Add your production domain to Google OAuth and GitHub OAuth
-2. Update the callback URL in Supabase to use your production domain
-3. Test the full OAuth flow on your production domain
+Add the following for the **Production** environment:
+
+| Key | Value |
+|-----|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://mkcimanpcghmzqwievsz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(from .env.local)* |
+| `SUPABASE_SERVICE_ROLE_KEY` | *(from .env.local)* |
+| `NEXTAUTH_URL` | `https://nihongood.app` |
+| `NEXTAUTH_SECRET` | *(generate below)* |
+
+Generate a strong secret:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+After adding env vars → **Redeploy** on Vercel (Settings → Deployments → Redeploy, or `git push`).
+
+---
+
+## Testing
+
+### Local
+1. `npm run dev`
+2. Go to `http://localhost:3000/login`
+3. Click Google or GitHub → complete sign-in → should land on `/dashboard`
+
+### Production
+1. Go to `https://nihongood.app/login`
+2. Click Google or GitHub → complete sign-in → should land on `https://nihongood.app/dashboard`
+
+---
 
 ## Troubleshooting
 
-### "Invalid redirect URI" error
+### "redirect_uri_mismatch" / "Invalid redirect URI"
+- The callback URL in Google/GitHub must **exactly match** what Supabase sends
+- For Google: make sure `https://nihongood.app/auth/callback` is in the redirect URIs list
+- For GitHub: the callback URL must be `https://mkcimanpcghmzqwievsz.supabase.co/auth/v1/callback`
 
-- Ensure the callback URL matches exactly in both the OAuth provider and Supabase
-- Check that `http://localhost:3000/auth/callback` is in your browser's URL bar
-
-### Redirect loop
-
-- Make sure the `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are correct
+### Redirect loop after sign-in
+- Check that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are correctly set in Vercel
 - Clear browser cookies and try again
+- Verify Site URL in Supabase is set to `https://nihongood.app` (not localhost)
 
-### Provider not showing
-
+### Provider button missing
 - Refresh the page
-- Check that the provider is enabled in Supabase dashboard
-- Verify that Client ID and Client Secret are correctly set
+- Confirm provider is **enabled** in Supabase dashboard
+- Verify Client ID and Secret are correctly pasted (no extra spaces)
+
+### Works locally but not in production
+- Confirm Vercel env vars are set for **Production** (not just Preview/Development)
+- Trigger a fresh redeploy after adding env vars
+- Check Vercel function logs for any `Missing Supabase env vars` errors

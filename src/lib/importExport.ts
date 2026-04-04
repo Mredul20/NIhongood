@@ -1,4 +1,5 @@
 import { ImportedCard, ImportResult, ImportError, CSVRow, JSONImportPayload } from '@/types/import';
+import { parseAnkiFile } from '@/lib/ankiParser';
 
 /**
  * Parse CSV content and extract cards
@@ -168,7 +169,24 @@ export function detectFormat(
 }
 
 /**
- * Import cards from file content
+ * Import cards from a File object.
+ * Handles CSV, JSON, and Anki APKG formats.
+ */
+export async function importCardsFromFile(file: File): Promise<ImportResult> {
+  const ext = file.name.toLowerCase().split('.').pop();
+
+  if (ext === 'apkg' || ext === 'colpkg') {
+    return parseAnkiFile(file);
+  }
+
+  // For text formats, read as string
+  const content = await file.text();
+  return importCards(file.name, content);
+}
+
+/**
+ * Import cards from file content (text-based formats only).
+ * For binary formats (.apkg) use importCardsFromFile instead.
  */
 export async function importCards(
   filename: string,
@@ -182,12 +200,11 @@ export async function importCards(
     case 'json':
       return parseJSON(content);
     case 'anki':
-      // TODO: Implement Anki import
       return {
         success: false,
         cardsImported: 0,
         cardsSkipped: 0,
-        errors: [{ row: 0, message: 'Anki import not yet implemented' }],
+        errors: [{ row: 0, message: 'APKG files must be imported via importCardsFromFile()' }],
         warnings: [],
         importedCards: [],
       };

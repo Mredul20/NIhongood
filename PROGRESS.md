@@ -78,10 +78,14 @@ NIhongood is a modern Japanese language learning app using Spaced Repetition Sys
    - OAuth providers
 
 ### Medium Priority
-1. **Anki APKG Import Parser** - Technical design ready (ANKI_APKG_PARSER.md)
-   - Need: jszip, better-sqlite3 dependencies
-   - Extract ZIP → Read SQLite database → Transform → Import
-   
+1. **Anki APKG Import Parser** ✅ COMPLETED
+   - jszip + sql.js (browser-compatible SQLite) installed
+   - `src/lib/ankiParser.ts` — full parser: unzip → SQLite → transform → ImportResult
+   - `src/app/api/import-anki/route.ts` — server-side API endpoint (5 req/min, 50 MB cap)
+   - `src/lib/importExport.ts` — updated with `importCardsFromFile()` supporting CSV/JSON/APKG
+   - `src/app/(app)/import-export/page.tsx` — UI updated with APKG support & warnings display
+   - `public/sql-wasm.wasm` — sql.js WASM binary served from public/
+
 2. **Advanced Features:**
    - Learning curves & analytics dashboards
    - Spaced repetition algorithm optimization
@@ -180,8 +184,12 @@ docs/
 ### Import/Export
 - [x] CSV parser implemented
 - [x] JSON import/export works
-- [ ] Large file handling tested
-- [ ] Unicode/Japanese characters preserved
+- [x] Anki APKG parser implemented (jszip + sql.js)
+- [x] HTML/LaTeX stripping from Anki card fields
+- [x] Auto card-type inference (kana / vocab / grammar)
+- [x] Server-side APKG import API route (/api/import-anki)
+- [ ] Large file handling tested (>10 MB decks)
+- [ ] Unicode/Japanese characters preserved (needs end-to-end test)
 
 ## Next Immediate Steps
 
@@ -224,6 +232,7 @@ Before production:
 
 1. **Fix auth form state management** - Ensures form becomes interactive after auth check
 2. **Add API rate limiting** - Prevents abuse of REST API endpoints
+3. **Implement Anki APKG import parser** - Browser-native parser using jszip + sql.js; full UI integration
 
 ## How to Continue
 
@@ -246,6 +255,6 @@ See `OAUTH_SETUP.md` for detailed instructions
 
 ---
 
-**Last Updated:** April 3, 2026
-**Status:** Core features complete, OAuth + testing pending
-**Next Session Goal:** Setup OAuth providers and test complete auth flow
+**Last Updated:** April 4, 2026
+**Status:** Core features complete + Anki APKG import done; OAuth + testing pending
+**Next Session Goal:** Setup OAuth providers, test complete auth flow, test APKG import with real deck

@@ -1,28 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import Sidebar from "@/components/Sidebar";
 import BadgeToast from "@/components/BadgeToast";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useUserPreferencesStore } from "@/store/userPreferencesStore";
+import { useAuthStore } from "@/store/authStore";
+import { db } from "@/lib/database";
 import SearchBar from "@/components/SearchBar";
 import LevelUpAnimation from "@/components/LevelUpAnimation";
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { onboarding } = useUserPreferencesStore();
+  const { user } = useAuthStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // Track whether we've finished loading preferences from Supabase
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const loadedForUser = useRef<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Show onboarding for new users who haven't completed it
-    if (!onboarding.hasCompletedOnboarding) {
-      setShowOnboarding(true);
-    }
-  }, [onboarding.hasCompletedOnboarding]);
+  }, []);
 
-  if (!mounted) {
+  // Load preferences from Supabase first, THEN decide whether to show onboarding.
+  // This prevents returning users from seeing onboarding on a fresh browser/device
+  // where the Zustand localStorage cache hasn't been hydrated yet.
+  useEffect(() => {
+    if (!user || loadedForUser.current === user.id) return;
+
+    const checkOnboarding = async () => {
+      try {
+        // Fetch raw preference row directly — avoids relying on store hydration timing
+        const preferences = await db.getUserPreferences(user.id);
+        const completed = preferences?.onboarding_completed ?? false;
+
+        if (!completed) {
+          setShowOnboarding(true);
+        }
+      } catch {
+        // On error fall back to local store value — better than blocking the user
+        if (!onboarding.hasCompletedOnboarding) {
+          setShowOnboarding(true);
+        }
+      } finally {
+        loadedForUser.current = user.id;
+        setPrefsLoaded(true);
+      }
+    };
+
+    checkOnboarding();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Show loading spinner until mounted AND preferences are fetched from Supabase.
+  // This is the gate that prevents the onboarding flash for returning users.
+  if (!mounted || !prefsLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--bg-secondary, #f7f7f7)" }}>
         <div className="flex flex-col items-center gap-4">

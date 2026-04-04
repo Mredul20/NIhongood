@@ -12,22 +12,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const { login, register, isAuthenticated, isLoading, error, clearError, loginWithGoogle, loginWithGithub } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-    setIsAuthReady(true);
   }, []);
 
   useEffect(() => {
-    if (mounted && isAuthReady && !isLoading && isAuthenticated) {
+    if (mounted && !isLoading && isAuthenticated) {
       router.push("/dashboard");
     }
-  }, [mounted, isAuthenticated, isAuthReady, isLoading, router]);
+  }, [mounted, isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,18 +47,50 @@ export default function LoginPage() {
     } catch { setIsSubmitting(false); }
   };
 
-  // Only disable inputs while an active submit is in flight.
-  // Do NOT include isLoading here — authStore.isLoading starts as `true` and
-  // initialize() is never called on the login page, so including it would
-  // permanently disable all inputs before the user can type anything.
-  const isDisabled = isSubmitting;
+  // Disable inputs while a form submit or OAuth redirect is in flight.
+  const isDisabled = isSubmitting || isOAuthLoading;
 
   const handleOAuthLogin = async (provider: "google" | "github") => {
-    if (provider === "google") await loginWithGoogle();
-    else await loginWithGithub();
+    clearError();
+    setIsOAuthLoading(true);
+    try {
+      if (provider === "google") await loginWithGoogle();
+      else await loginWithGithub();
+      // Note: on success the browser redirects to Supabase then back to /auth/callback.
+      // On cancel/error the user stays on this page — isOAuthLoading is reset below.
+    } catch {
+      // Provider cancelled or error — reset loading state so page stays usable
+      setIsOAuthLoading(false);
+    }
+    // If we're still here (user cancelled OAuth popup / tab), re-enable the form.
+    setIsOAuthLoading(false);
   };
 
-  if (!mounted) return null;
+  // Show a minimal skeleton while the component hydrates instead of a blank page.
+  // This also prevents a flash when the user cancels OAuth and is returned to /login.
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-secondary, #f7f7f7)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black text-white animate-bounce"
+            style={{ background: "#ff4b8b", boxShadow: "0 5px 0 #e0357a" }}
+          >
+            日
+          </div>
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full animate-bounce"
+                style={{ background: "#ff4b8b", animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--bg-secondary, #f7f7f7)" }}>
@@ -104,12 +135,18 @@ export default function LoginPage() {
             }}
           >
             {/* OAuth buttons */}
+            {isOAuthLoading && (
+              <div className="mb-4 p-3 rounded-xl border-2 border-blue-200 bg-blue-50 flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-blue-400/40 border-t-blue-500 rounded-full animate-spin flex-shrink-0" />
+                <p className="text-sm font-bold text-blue-600">Opening sign-in window…</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3 mb-5">
               <button
                 type="button"
                 onClick={() => handleOAuthLogin("google")}
                 disabled={isDisabled}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all hover:translate-y-[-1px] disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: "var(--bg-card, #fff)",
                   borderColor: "var(--border-color, #e5e5e5)",
@@ -129,7 +166,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleOAuthLogin("github")}
                 disabled={isDisabled}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all hover:translate-y-[-1px] disabled:opacity-50"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: "var(--bg-card, #fff)",
                   borderColor: "var(--border-color, #e5e5e5)",
