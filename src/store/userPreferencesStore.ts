@@ -364,8 +364,8 @@ export const useUserPreferencesStore = create<UserPreferencesState>()(
 
           await db.updateUserPreferences(userId, {
             experience_level: state.experienceLevel,
-            srs_settings: state.srsSettings as Record<string, unknown>,
-            ui_preferences: state.uiPreferences as Record<string, unknown>,
+            srs_settings: JSON.parse(JSON.stringify(state.srsSettings)),
+            ui_preferences: JSON.parse(JSON.stringify(state.uiPreferences)),
             onboarding_completed: state.onboarding.hasCompletedOnboarding,
             introduced_features: state.onboarding.introducedFeatures,
             total_reviews_completed: state.onboarding.totalReviewsCompleted,
