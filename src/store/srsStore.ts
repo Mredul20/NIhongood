@@ -102,7 +102,9 @@ function calculateNextReview(card: SRSCard, rating: Rating): Partial<SRSCard> {
 
   switch (rating) {
     case "again":
-      interval = 1;
+      // Reset interval to 0 so the card shows up immediately in the current
+      // session (nextReview = today). The srs.ts lib also uses 0 for this case.
+      interval = 0;
       easeFactor = Math.max(1.3, easeFactor - 0.2);
       repetitions = 0;
       break;

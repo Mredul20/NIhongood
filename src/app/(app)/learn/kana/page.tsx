@@ -20,11 +20,13 @@ export default function KanaPage() {
   const progress = useProgressStore();
   const srs = useSRSStore();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return <div className="animate-pulse duo-card h-96" />;
 
   const kanaSet = tab === "hiragana" ? HIRAGANA : KATAKANA;
-  const learnedCount = Object.keys(learning.learnedKana).filter((k) => {
+  const learnedCount = Object.entries(learning.learnedKana).filter(([k, v]) => {
+    if (!v) return false;
     const code = k.charCodeAt(0);
     return tab === "hiragana" ? code >= 0x3040 && code <= 0x309f : code >= 0x30a0 && code <= 0x30ff;
   }).length;
@@ -79,13 +81,11 @@ export default function KanaPage() {
       </div>
 
       {mode === "chart" ? (
-        <KanaChart kanaSet={kanaSet} learnedKana={learning.learnedKana} onSelect={setSelectedChar} color={color} />
+        <KanaChart kanaSet={kanaSet} learnedKana={learning.learnedKana} onSelect={setSelectedChar} />
       ) : (
         <KanaQuiz
           kanaSet={kanaSet}
           tab={tab}
-          color={color}
-          shadow={shadow}
           onComplete={(score) => { progress.addXP(score * 5); progress.recordStudySession(2); progress.recordLessonComplete(); }}
           markLearned={(char) => { learning.markKanaLearned(char); addToSRS(kanaSet.find((k) => k.char === char)!); }}
         />
@@ -136,8 +136,8 @@ export default function KanaPage() {
   );
 }
 
-function KanaChart({ kanaSet, learnedKana, onSelect, color }: {
-  kanaSet: KanaChar[]; learnedKana: Record<string, boolean>; onSelect: (c: KanaChar) => void; color: string;
+function KanaChart({ kanaSet, learnedKana, onSelect }: {
+  kanaSet: KanaChar[]; learnedKana: Record<string, boolean>; onSelect: (c: KanaChar) => void;
 }) {
   return (
     <div className="duo-card p-5">
@@ -181,8 +181,8 @@ function KanaChart({ kanaSet, learnedKana, onSelect, color }: {
   );
 }
 
-function KanaQuiz({ kanaSet, tab, color, shadow, onComplete, markLearned }: {
-  kanaSet: KanaChar[]; tab: Tab; color: string; shadow: string;
+function KanaQuiz({ kanaSet, tab, onComplete, markLearned }: {
+  kanaSet: KanaChar[]; tab: Tab;
   onComplete: (score: number, total: number) => void;
   markLearned: (char: string) => void;
 }) {
@@ -199,7 +199,8 @@ function KanaQuiz({ kanaSet, tab, color, shadow, onComplete, markLearned }: {
       return { char, options, correct: options.indexOf(char.romaji) };
     });
     setQuestions(qs); setQi(0); setScore(0); setSelected(null);
-  }, [tab]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]); // kanaSet intentionally excluded: shuffling on tab change only
 
   if (questions.length === 0) return null;
 

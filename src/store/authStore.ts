@@ -34,7 +34,7 @@ interface AuthState {
 
 // Convert Supabase user + profile to our User type
 async function toUser(supabaseUser: SupabaseUser, retries = 3): Promise<User | null> {
-  let lastError: any;
+  let lastError: unknown;
   
   // Retry logic for profile creation (trigger may not have completed yet)
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -93,7 +93,11 @@ export const useAuthStore = create<AuthState>()(
         // NOTE: we only skip if already initialized AND a user is present (or we
         // finished and found no user). After logout isLoading is set back to false
         // with user=null, so we must still allow re-initialization on next mount.
-        if (get().isLoading === false && get().user !== null) return;
+        // Guard: skip if already initialized with a valid user.
+        // Do NOT skip when user is null — that means either we haven't checked yet
+        // or the user logged out. isLoading starts as true, so the condition below
+        // only fires when initialize() already completed successfully.
+        if (!get().isLoading && get().user !== null) return;
 
         try {
           const supabase = createClient();
@@ -122,9 +126,15 @@ export const useAuthStore = create<AuthState>()(
             }
           });
 
-          // Store cleanup reference (callers can use the returned unsubscribe
-          // but we don't need to return it from the void initialize function)
-          void (() => subscription.unsubscribe());
+          // Store the unsubscribe function so we don't leak the listener.
+          // Calling it immediately would defeat the purpose — we only want it
+          // cleaned up when the app unmounts, so we attach it to window as a
+          // best-effort teardown (or it will be GC'd with the tab).
+          if (typeof window !== "undefined") {
+            const prev = (window as unknown as Record<string, unknown>).__supabaseAuthUnsub;
+            if (typeof prev === "function") (prev as () => void)();
+            (window as unknown as Record<string, unknown>).__supabaseAuthUnsub = () => subscription.unsubscribe();
+          }
         } catch (error) {
           console.error("Auth initialization error:", error);
           set({ user: null, isAuthenticated: false, isLoading: false });

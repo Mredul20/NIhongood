@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { 
   useUserPreferencesStore, 
   ExperienceLevel,
-  AutomationLevel,
   FEATURE_UNLOCKS 
 } from "@/store/userPreferencesStore";
 import { HelpTooltip, UnlockProgress } from "@/components/OnboardingFlow";
@@ -15,6 +14,7 @@ export default function SettingsPage() {
   const prefs = useUserPreferencesStore();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

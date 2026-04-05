@@ -13,6 +13,8 @@ export function ThemeToggle() {
   const { theme, setTheme, initTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
+  // setMounted(true) is a one-time hydration guard — intentional setState in effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); initTheme(); }, [initTheme]);
 
   if (!mounted) {
@@ -51,6 +53,8 @@ export function ThemeToggleCompact() {
   const { theme, resolvedTheme, setTheme, initTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
+  // setMounted(true) is a one-time hydration guard — intentional setState in effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); initTheme(); }, [initTheme]);
 
   const cycleTheme = () => {

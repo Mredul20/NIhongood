@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party agent skill templates — not project source
+    ".agents/**",
   ]),
 ]);
 

@@ -3,9 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { VOCABULARY } from "@/data/vocabulary";
 import { KANJI_N5 } from "@/data/kanji";
+import Link from "next/link";
 import { useProgressStore } from "@/store/progressStore";
-import { useLearningStore } from "@/store/learningStore";
-
 const CHALLENGE_DURATION = 60; // seconds
 const QUESTIONS_PER_CHALLENGE = 10;
 
@@ -92,7 +91,6 @@ function getTypeLabel(type: QuestionType): string {
 
 export default function ChallengePage() {
   const progress = useProgressStore();
-  const learning = useLearningStore();
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<"intro" | "playing" | "done">("intro");
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -103,6 +101,7 @@ export default function ChallengePage() {
   const [timeLeft, setTimeLeft] = useState(CHALLENGE_DURATION);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -141,9 +140,12 @@ export default function ChallengePage() {
       setXpEarned((x) => x + earned);
       setStreak(newStreak);
       setBestStreak((b) => Math.max(b, newStreak));
+      setFeedback("correct");
     } else {
       setStreak(0);
+      setFeedback("wrong");
     }
+    setTimeout(() => setFeedback(null), 500);
 
     setTimeout(() => {
       setSelected(null);
@@ -161,7 +163,8 @@ export default function ChallengePage() {
       progress.addXP(xpEarned);
       progress.recordStudySession(2);
     }
-  }, [phase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]); // Only re-run when phase changes — xpEarned is stable at that point
 
   if (!mounted) return <div className="animate-pulse duo-card h-96" />;
 
@@ -198,8 +201,8 @@ export default function ChallengePage() {
 
         {alreadyDone && (
           <div className="p-4 rounded-2xl border-2 text-center" style={{ background: "rgba(255,75,139,0.06)", borderColor: "rgba(255,75,139,0.25)" }}>
-            <p className="text-sm font-bold" style={{ color: "#ff4b8b" }}>✅ You've already earned challenge XP today!</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>You can still play for fun</p>
+            <p className="text-sm font-bold" style={{ color: "#ff4b8b" }}>✅ You&apos;ve already earned challenge XP today!</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>You can still play for fun.</p>
           </div>
         )}
 
@@ -238,7 +241,7 @@ export default function ChallengePage() {
 
           <div className="flex gap-3">
             <button onClick={startChallenge} className="btn-primary flex-1">🔄 Play Again</button>
-            <a href="/dashboard" className="btn-secondary flex-1 text-center">🏠 Dashboard</a>
+            <Link href="/dashboard" className="btn-secondary flex-1 text-center">🏠 Dashboard</Link>
           </div>
         </div>
       </div>
@@ -252,6 +255,10 @@ export default function ChallengePage() {
 
   return (
     <div className="max-w-lg mx-auto space-y-4 animate-fade-in pb-8">
+      {/* Answer feedback flash */}
+      {feedback && (
+        <div className={`fixed inset-0 pointer-events-none z-50 ${feedback === "correct" ? "animate-flash-correct" : "animate-flash-wrong"}`} />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -266,7 +273,10 @@ export default function ChallengePage() {
 
       {/* Timer bar */}
       <div className="progress-bar h-3">
-        <div className="progress-bar-fill transition-all duration-1000" style={{ width: `${timerPct}%`, background: timerColor }} />
+        <div
+          className={`progress-bar-fill transition-all duration-1000 ${timeLeft <= 10 ? "animate-pulse" : ""}`}
+          style={{ width: `${timerPct}%`, background: timerColor }}
+        />
       </div>
 
       {/* Question */}
@@ -274,7 +284,7 @@ export default function ChallengePage() {
         <p className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: "var(--text-secondary)" }}>
           {getTypeLabel(q.type)}
         </p>
-        <p className="text-6xl font-japanese font-black mb-2" style={{ color: "var(--text-primary)" }}>{q.prompt}</p>
+        <p className="text-4xl sm:text-6xl font-japanese font-black mb-2" style={{ color: "var(--text-primary)" }}>{q.prompt}</p>
         {q.promptSub && <p className="text-lg font-japanese font-semibold" style={{ color: "#ce82ff" }}>{q.promptSub}</p>}
         <p className="text-xs font-bold mt-2 px-2 py-0.5 rounded-full inline-block" style={{ background: "rgba(255,75,139,0.1)", color: "#ff4b8b" }}>
           +{q.xp} XP {streak >= 2 ? `(+${Math.floor(q.xp * 0.5)} streak bonus!)` : ""}

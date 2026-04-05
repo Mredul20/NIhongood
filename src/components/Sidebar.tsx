@@ -5,21 +5,30 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeToggleCompact } from "./ThemeToggle";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",      label: "Home",         icon: "🏠", color: "#ff4b8b" },
-  { href: "/learn/kana",     label: "Kana",         icon: "あ", color: "#ff86d0" },
-  { href: "/learn/kanji",    label: "Kanji",        icon: "漢", color: "#ff9600" },
-  { href: "/learn/vocab",    label: "Vocabulary",   icon: "📖", color: "#ce82ff" },
-  { href: "/learn/grammar",  label: "Grammar",      icon: "📝", color: "#1cb0f6" },
-  { href: "/flashcards",     label: "Flashcards",   icon: "🃏", color: "#ffc800" },
-  { href: "/review",         label: "Review",       icon: "🔄", color: "#ff4b4b" },
-  { href: "/challenge",      label: "Challenge",    icon: "⚡", color: "#ff9600" },
-  { href: "/profile",        label: "Profile",      icon: "👤", color: "#ff4b8b" },
-  { href: "/import-export",  label: "Import/Export",icon: "↔️", color: "#1cb0f6" },
-  { href: "/settings",       label: "Settings",     icon: "⚙️", color: "#777777" },
+  { href: "/dashboard",     label: "Home",         icon: "🏠", color: "#ff4b8b" },
+  { href: "/learn/kana",    label: "Kana",         icon: "あ", color: "#ff86d0" },
+  { href: "/learn/kanji",   label: "Kanji",        icon: "漢", color: "#ff9600" },
+  { href: "/learn/vocab",   label: "Vocabulary",   icon: "📖", color: "#ce82ff" },
+  { href: "/learn/grammar", label: "Grammar",      icon: "📝", color: "#1cb0f6" },
+  { href: "/flashcards",    label: "Flashcards",   icon: "🃏", color: "#ffc800" },
+  { href: "/review",        label: "Review",       icon: "🔄", color: "#ff4b4b" },
+  { href: "/challenge",     label: "Challenge",    icon: "⚡", color: "#ff9600" },
+  { href: "/profile",       label: "Profile",      icon: "👤", color: "#ff4b8b" },
+  { href: "/import-export", label: "Import/Export",icon: "↔️", color: "#1cb0f6" },
+  { href: "/settings",      label: "Settings",     icon: "⚙️", color: "#777777" },
+];
+
+// Bottom nav shows only the most important 5 items on mobile
+const BOTTOM_NAV = [
+  { href: "/dashboard",   label: "Home",      icon: "🏠", color: "#ff4b8b" },
+  { href: "/learn/vocab", label: "Vocab",     icon: "📖", color: "#ce82ff" },
+  { href: "/flashcards",  label: "Cards",     icon: "🃏", color: "#ffc800" },
+  { href: "/review",      label: "Review",    icon: "🔄", color: "#ff4b4b" },
+  { href: "/profile",     label: "Profile",   icon: "👤", color: "#ff4b8b" },
 ];
 
 export default function Sidebar() {
@@ -28,30 +37,37 @@ export default function Sidebar() {
   const { level, totalXP, currentStreak } = useProgressStore();
   const { getCardCount } = useSRSStore();
   const dueCount = getCardCount().due;
-  const [collapsed, setCollapsed] = useState(false);
+  // Start closed on mobile
+  const [open, setOpen] = useState(false);
+
+  // Close sidebar on route change (mobile).
+  // setState inside effect is intentional here: we respond to an external
+  // navigation event, not to React render state.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 rounded-xl bg-white border-2 border-[#e5e5e5] shadow-[0_3px_0_#e5e5e5] flex items-center justify-center text-xl"
-        id="sidebar-toggle"
-      >
-        {collapsed ? "☰" : "✕"}
-      </button>
-
-      {/* Mobile overlay */}
-      {!collapsed && (
+      {/* ── MOBILE OVERLAY ── */}
+      {open && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-30"
-          onClick={() => setCollapsed(true)}
+          className="lg:hidden fixed inset-0 z-40"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setOpen(false)}
         />
       )}
 
+      {/* ── SIDEBAR ── */}
       <aside
-        className={`sidebar fixed top-0 left-0 h-full z-40 w-72 flex flex-col transition-transform duration-300 ${
-          collapsed ? "-translate-x-full lg:translate-x-0" : "translate-x-0"
+        className={`sidebar fixed top-0 left-0 h-full z-40 w-72 flex flex-col transition-transform duration-300 ease-in-out ${
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo */}
@@ -98,7 +114,6 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setCollapsed(true)}
                 id={`nav-${item.label.toLowerCase()}`}
                 className={`nav-link ${isActive ? "nav-link-active" : ""}`}
                 style={isActive ? { borderColor: `${item.color}40`, background: `${item.color}12`, color: item.color } : {}}
@@ -147,6 +162,75 @@ export default function Sidebar() {
           </button>
         </div>
       </aside>
+
+      {/* ── MOBILE FLOATING BOTTOM NAV ── */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)", paddingTop: "8px" }}
+      >
+        <div
+          className="flex items-center gap-1 px-3 py-2 rounded-[28px]"
+          style={{
+            background: "var(--bg-card)",
+            border: "2px solid var(--border-color)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15), 0 4px 0 var(--border-color)",
+          }}
+        >
+          {BOTTOM_NAV.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-col items-center justify-center transition-all duration-200 active:scale-90"
+                style={{
+                  minWidth: isActive ? "72px" : "48px",
+                  height: "52px",
+                  borderRadius: "20px",
+                  background: isActive ? `${item.color}18` : "transparent",
+                  padding: "6px 10px",
+                }}
+              >
+                {/* Icon */}
+                <span
+                  className="leading-none transition-all duration-300"
+                  style={{
+                    fontSize: isActive ? "22px" : "20px",
+                    transform: isActive ? "translateY(-2px)" : "translateY(0)",
+                    filter: isActive ? `drop-shadow(0 2px 4px ${item.color}60)` : "none",
+                  }}
+                >
+                  {item.icon}
+                </span>
+
+                {/* Label — only visible when active */}
+                <span
+                  className="font-black uppercase tracking-wider leading-none overflow-hidden transition-all duration-300"
+                  style={{
+                    fontSize: "9px",
+                    color: item.color,
+                    maxHeight: isActive ? "14px" : "0px",
+                    opacity: isActive ? 1 : 0,
+                    marginTop: isActive ? "3px" : "0px",
+                  }}
+                >
+                  {item.label}
+                </span>
+
+                {/* Due badge */}
+                {item.href === "/review" && dueCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-black text-white rounded-full px-1"
+                    style={{ background: "#ff4b4b", boxShadow: "0 2px 4px rgba(255,75,75,0.4)" }}
+                  >
+                    {dueCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }

@@ -5,6 +5,7 @@ import { GRAMMAR_POINTS, GrammarPoint } from "@/data/grammar";
 import { useLearningStore } from "@/store/learningStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
+import { getJapaneseTTSText, speak } from "@/lib/speak";
 
 export default function GrammarPage() {
   const [selectedPoint, setSelectedPoint] = useState<GrammarPoint | null>(null);
@@ -14,13 +15,14 @@ export default function GrammarPage() {
 
   const learning = useLearningStore();
   const progress = useProgressStore();
-  const srs = useSRSStore();
+  const srs = useSRSStore(); // used in quiz mode (quizPoint handler below)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) return <div className="animate-pulse glass-card h-96" />;
 
-  const completedCount = Object.keys(learning.completedGrammar).length;
+  const completedCount = Object.values(learning.completedGrammar).filter(Boolean).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -105,7 +107,12 @@ export default function GrammarPage() {
                     <div className="space-y-3 mb-6">
                       {point.examples.map((ex, i) => (
                         <div key={i} className="bg-navy-800/40 rounded-xl p-4">
-                          <p className="text-lg font-japanese text-slate-200">{ex.ja}</p>
+                          <button
+                            onClick={() => speak(getJapaneseTTSText(ex.ja, ex.reading))}
+                            className="text-lg font-japanese text-slate-200 text-left hover:opacity-80 transition-opacity"
+                          >
+                            {ex.ja} 🔊
+                          </button>
                           <p className="text-sm text-slate-400 mt-1">{ex.en}</p>
                           {ex.breakdown && (
                             <p className="text-xs text-sakura-400/70 mt-2 font-mono">{ex.breakdown}</p>

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'text/csv',
           'Content-Disposition': `attachment; filename="nihongood-export-${new Date().toISOString().split('T')[0]}.csv"`,
           'X-RateLimit-Limit': '10',
-          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Remaining': limit.remaining.toString(),
           'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       });
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename="nihongood-export-${new Date().toISOString().split('T')[0]}.json"`,
         'X-RateLimit-Limit': '10',
-        'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+        'X-RateLimit-Remaining': limit.remaining.toString(),
         'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
       },
     });

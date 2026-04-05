@@ -27,6 +27,19 @@ export function speak(text: string, lang: "ja-JP" | "en-US" = "ja-JP", rate = 0.
   window.speechSynthesis.speak(utterance);
 }
 
+/**
+ * Normalizes Japanese reading text for browser TTS.
+ * Uses the first variant when multiple readings are provided and removes
+ * dictionary markers that sound unnatural when spoken aloud.
+ */
+export function normalizeJapaneseTTS(text: string) {
+  return text.replace(/[-.]/g, "").split("/")[0].trim();
+}
+
+export function getJapaneseTTSText(text: string, reading?: string) {
+  return reading ? normalizeJapaneseTTS(reading) : text;
+}
+
 /** Load voices asynchronously (Chrome needs this) */
 export function loadVoices(): Promise<SpeechSynthesisVoice[]> {
   return new Promise((resolve) => {

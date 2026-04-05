@@ -1,4 +1,4 @@
-import { ImportedCard, ImportResult, ImportError, CSVRow, JSONImportPayload } from '@/types/import';
+import { ImportedCard, ImportResult, ImportError, JSONImportPayload } from '@/types/import';
 import { parseAnkiFile } from '@/lib/ankiParser';
 
 /**

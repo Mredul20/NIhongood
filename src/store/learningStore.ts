@@ -77,21 +77,24 @@ export const useLearningStore = create<LearningState>()(
         })),
 
       getKanaMastery: () => {
-        const total = 92; // 46 hiragana + 46 katakana
-        const learned = Object.keys(get().learnedKana).length;
-        return Math.round((learned / total) * 100);
+        // 46 hiragana + 46 katakana — keep in sync with kana data file
+        const TOTAL_KANA = 92;
+        const learned = Object.values(get().learnedKana).filter(Boolean).length;
+        return Math.round((learned / TOTAL_KANA) * 100);
       },
 
       getVocabProgress: () => {
-        const total = 50;
-        const learned = Object.keys(get().learnedVocab).length;
-        return Math.round((learned / total) * 100);
+        // Matches VOCABULARY array length in src/data/vocabulary.ts
+        const TOTAL_VOCAB = 50;
+        const learned = Object.values(get().learnedVocab).filter(Boolean).length;
+        return Math.round((learned / TOTAL_VOCAB) * 100);
       },
 
       getGrammarProgress: () => {
-        const total = 10;
-        const completed = Object.keys(get().completedGrammar).length;
-        return Math.round((completed / total) * 100);
+        // Matches grammar lessons count in src/data/grammar.ts
+        const TOTAL_GRAMMAR = 10;
+        const completed = Object.values(get().completedGrammar).filter(Boolean).length;
+        return Math.round((completed / TOTAL_GRAMMAR) * 100);
       },
 
       loadFromSupabase: async (userId: string) => {

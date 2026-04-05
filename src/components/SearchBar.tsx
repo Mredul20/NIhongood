@@ -71,6 +71,9 @@ export default function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // Derive search results from query — setState here responds to user input,
+  // not to React rendering. Intentional pattern for search-as-you-type.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!query.trim()) { setResults([]); setOpen(false); return; }
     const q = query.toLowerCase();
@@ -83,6 +86,7 @@ export default function SearchBar() {
     setOpen(filtered.length > 0);
     setSelected(0);
   }, [query, index]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keyboard shortcut: Ctrl/Cmd+K to open
   useEffect(() => {
@@ -125,7 +129,7 @@ export default function SearchBar() {
           onFocus={() => query && results.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Search vocab, kanji, grammar… (⌘K)"
-          className="w-full pl-9 pr-4 py-2 rounded-xl text-sm font-semibold border-2 outline-none transition-all"
+          className="w-full pl-9 pr-4 py-2 rounded-xl text-sm font-semibold border-2 outline-none transition-all [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
           style={{
             background: "var(--bg-secondary)",
             borderColor: "var(--border-color)",

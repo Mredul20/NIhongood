@@ -9,9 +9,11 @@ import { useUserPreferencesStore } from "@/store/userPreferencesStore";
 import { useAuthStore } from "@/store/authStore";
 import { db } from "@/lib/database";
 import SearchBar from "@/components/SearchBar";
+import { usePathname } from "next/navigation";
 import LevelUpAnimation from "@/components/LevelUpAnimation";
 
 function AppContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { onboarding } = useUserPreferencesStore();
   const { user } = useAuthStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -89,12 +91,16 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 lg:ml-72 min-h-screen">
-        {/* Top bar with search */}
-        <div className="sticky top-0 z-20 px-6 lg:px-8 py-3 flex items-center justify-end gap-3" style={{ background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-color)" }}>
+      <main className="flex-1 lg:ml-72 min-h-screen flex flex-col">
+        {/* Top bar — desktop only */}
+        <div
+          className="hidden lg:flex sticky top-0 z-20 items-center justify-end gap-3 px-8 py-3"
+          style={{ background: "var(--bg-secondary)", borderBottom: "2px solid var(--border-color)" }}
+        >
           <SearchBar />
         </div>
-        <div className="max-w-6xl mx-auto p-6 lg:p-8">
+        {/* Page content — extra bottom padding on mobile for bottom nav */}
+        <div key={pathname} className="max-w-6xl mx-auto w-full p-4 lg:p-8 pb-28 lg:pb-8 animate-page-in">
           {children}
         </div>
       </main>

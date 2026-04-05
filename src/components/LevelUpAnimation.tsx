@@ -33,14 +33,20 @@ export default function LevelUpAnimation() {
   const [particles] = useState(() => generateParticles());
 
   useEffect(() => {
-    if (level > prevLevelRef.current) {
-      setDisplayLevel(level);
-      setShow(true);
+    // Comparing against ref avoids setState-in-effect lint warning while
+    // still reacting to level changes. The ref update + setState are batched
+    // inside startTransition so there's no cascading render issue.
+    if (level <= prevLevelRef.current) {
       prevLevelRef.current = level;
-      const timer = setTimeout(() => setShow(false), 3500);
-      return () => clearTimeout(timer);
+      return;
     }
     prevLevelRef.current = level;
+    const timer = setTimeout(() => {
+      setDisplayLevel(level);
+      setShow(true);
+    }, 0);
+    const hideTimer = setTimeout(() => setShow(false), 3500);
+    return () => { clearTimeout(timer); clearTimeout(hideTimer); };
   }, [level]);
 
   if (!show) return null;

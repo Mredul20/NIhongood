@@ -6,7 +6,8 @@ import { checkRateLimit } from '@/lib/rateLimiter';
 /**
  * GET /api/progress - Get user's progress data
  */
-export async function GET(request: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           'X-RateLimit-Limit': '100',
-          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Remaining': limit.remaining.toString(),
           'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       }
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
 /**
  * PUT /api/progress - Update progress data
  */
-export async function PUT(request: NextRequest) {
+export async function PUT(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -104,7 +105,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
 
     const { error } = await db.updateProgress(session.user.id, body);
 
@@ -125,7 +126,7 @@ export async function PUT(request: NextRequest) {
       {
         headers: {
           'X-RateLimit-Limit': '30',
-          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Remaining': limit.remaining.toString(),
           'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       }

@@ -6,7 +6,8 @@ import { useProgressStore } from "@/store/progressStore";
 import { useUserPreferencesStore } from "@/store/userPreferencesStore";
 import { CardInfoModal, SRSInsightsPanel } from "@/components/SRSInsights";
 import { HelpTooltip, UnlockProgress, FeatureUnlockNotification } from "@/components/OnboardingFlow";
-import { speak } from "@/lib/speak";
+import Link from "next/link";
+import { getJapaneseTTSText, speak } from "@/lib/speak";
 
 type Rating = "again" | "hard" | "good" | "easy";
 type ReviewMode = "normal" | "reverse" | "listening";
@@ -37,6 +38,7 @@ export default function ReviewPage() {
   const [newUnlock, setNewUnlock] = useState<string | null>(null);
   const [reviewMode, setReviewMode] = useState<ReviewMode>("normal");
   const [listeningAnswer, setListeningAnswer] = useState("");
+  const [answerFeedback, setAnswerFeedback] = useState<"correct" | "wrong" | null>(null);
 
   // Check if features should be shown based on experience level and unlocks
   const showCardStatusBar = uiPreferences.showCardStatusBar && 
@@ -58,7 +60,8 @@ export default function ReviewPage() {
     
     setDueCards(limitedCards);
     if (limitedCards.length === 0) setSessionDone(true);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally run once on mount — due cards are snapshot at session start
 
   const handleRate = useCallback((rating: Rating) => {
     if (currentIndex >= dueCards.length) return;
@@ -81,6 +84,9 @@ export default function ReviewPage() {
     } else if (nextUnlock && previousReviews < 50 && previousReviews + 1 >= 50) {
       setNewUnlock("Advanced SRS Settings");
     }
+
+    setAnswerFeedback(rating !== "again" ? "correct" : "wrong");
+    setTimeout(() => setAnswerFeedback(null), 600);
 
     setSessionStats((prev) => ({
       correct: prev.correct + (rating !== "again" ? 1 : 0),
@@ -112,8 +118,8 @@ export default function ReviewPage() {
           All caught up! Learn new words in the vocabulary section or wait for your cards to become due.
         </p>
         <div className="flex gap-3">
-          <a href="/learn/vocab" className="btn-primary">📖 Learn Vocabulary</a>
-          <a href="/learn/kana" className="btn-secondary">あ Learn Kana</a>
+          <Link href="/learn/vocab" className="btn-primary">📖 Learn Vocabulary</Link>
+          <Link href="/learn/kana" className="btn-secondary">あ Learn Kana</Link>
         </div>
 
         {/* Card stats with insights button */}
@@ -219,8 +225,8 @@ export default function ReviewPage() {
           )}
           
           <div className="flex gap-3">
-            <a href="/dashboard" className="btn-secondary flex-1 text-center text-sm">Dashboard</a>
-            <a href="/learn/vocab" className="btn-primary flex-1 text-center text-sm">Learn More</a>
+            <Link href="/dashboard" className="btn-secondary flex-1 text-center text-sm">Dashboard</Link>
+            <Link href="/learn/vocab" className="btn-primary flex-1 text-center text-sm">Learn More</Link>
           </div>
         </div>
         
@@ -243,6 +249,7 @@ export default function ReviewPage() {
 
   const currentCard = dueCards[currentIndex];
   const cardExplanation = srs.getCardExplanation(currentCard);
+  const reviewAudio = getJapaneseTTSText(currentCard.front, currentCard.reading);
 
   // Determine what to show as front/back based on mode
   const displayFront = reviewMode === "reverse" ? currentCard.back : currentCard.front;
@@ -344,7 +351,7 @@ export default function ReviewPage() {
           </span>
           <div>
             <button
-              onClick={() => speak(currentCard.front)}
+              onClick={() => speak(reviewAudio)}
               className="text-7xl hover:scale-110 transition-transform active:scale-95"
               title="Play audio"
             >🔊</button>
@@ -492,6 +499,11 @@ export default function ReviewPage() {
           }}
         />
       )}
+
+      {/* Answer feedback flash */}
+      {answerFeedback && (
+        <div className={`fixed inset-0 pointer-events-none z-50 ${answerFeedback === "correct" ? "animate-flash-correct" : "animate-flash-wrong"}`} />
+      )}
     </div>
   );
 }
@@ -507,10 +519,11 @@ function RatingButton({ label, sub, color, onClick, tooltip }: {
   const button = (
     <button
       onClick={onClick}
-      className={`p-4 rounded-xl border text-center transition-all active:scale-95 ${color}`}
+      className={`py-4 px-2 rounded-xl border-2 text-center transition-all active:scale-95 hover:translate-y-[-2px] ${color}`}
+      style={{ minHeight: "64px", boxShadow: "0 4px 0 rgba(0,0,0,0.15)" }}
     >
-      <p className="font-bold text-sm">{label}</p>
-      {sub && <p className="text-xs opacity-60 mt-1">{sub}</p>}
+      <p className="font-black text-sm">{label}</p>
+      {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
     </button>
   );
 

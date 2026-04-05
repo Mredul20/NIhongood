@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           'X-RateLimit-Limit': '60',
-          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Remaining': limit.remaining.toString(),
           'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       }
@@ -138,12 +138,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cardsToInsert = cards.map((card, index) => ({
+    // Validate each card has required fields
+    const validationErrors: string[] = [];
+    cards.forEach((card: Record<string, unknown>, index: number) => {
+      if (!card.front || typeof card.front !== 'string' || !card.front.trim()) {
+        validationErrors.push(`Card ${index + 1}: missing or empty "front" field`);
+      }
+      if (!card.back || typeof card.back !== 'string' || !card.back.trim()) {
+        validationErrors.push(`Card ${index + 1}: missing or empty "back" field`);
+      }
+      if (card.type && !['kana', 'vocab', 'grammar'].includes(card.type as string)) {
+        validationErrors.push(`Card ${index + 1}: "type" must be kana, vocab, or grammar`);
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationErrors.slice(0, 10) },
+        { status: 400 }
+      );
+    }
+
+    const cardsToInsert = cards.map((card: Record<string, unknown>, index: number) => ({
       id: `api-${Date.now()}-${index}`,
-      front: card.front,
-      back: card.back,
-      reading: card.reading,
-      type: card.type || 'vocab',
+      front: (card.front as string).trim(),
+      back: (card.back as string).trim(),
+      reading: card.reading as string | undefined,
+      type: (card.type as string) || 'vocab',
     }));
 
     // Bulk insert to database
@@ -165,7 +186,7 @@ export async function POST(request: NextRequest) {
       {
         headers: {
           'X-RateLimit-Limit': '20',
-          'X-RateLimit-Remaining': (limit.remaining - 1).toString(),
+          'X-RateLimit-Remaining': limit.remaining.toString(),
           'X-RateLimit-Reset': new Date(limit.resetAt).toISOString(),
         },
       }

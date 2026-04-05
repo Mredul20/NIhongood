@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { calculateNextReview, getIntervalPreview } from "@/lib/srs";
+import { getIntervalPreview } from "@/lib/srs";
 
 interface AnswerButtonsProps {
   onAnswer: (quality: 0 | 1 | 2 | 3) => void;

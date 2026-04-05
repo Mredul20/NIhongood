@@ -97,10 +97,14 @@ export function cleanupExpiredLimits() {
   return cleaned;
 }
 
-// Run cleanup every 5 minutes
-setInterval(() => {
-  const cleaned = cleanupExpiredLimits();
-  if (cleaned > 0) {
-    console.log(`[RateLimiter] Cleaned up ${cleaned} expired entries`);
-  }
-}, 5 * 60 * 1000);
+// Run cleanup every 5 minutes — only in server/Node environments.
+// In a browser bundle this would fire on every page load and is unnecessary
+// (the store is per-request in a serverless context anyway).
+if (typeof window === "undefined") {
+  setInterval(() => {
+    const cleaned = cleanupExpiredLimits();
+    if (cleaned > 0) {
+      console.log(`[RateLimiter] Cleaned up ${cleaned} expired entries`);
+    }
+  }, 5 * 60 * 1000);
+}

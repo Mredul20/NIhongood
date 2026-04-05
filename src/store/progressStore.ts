@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { db } from "@/lib/database";
-import { useAuthStore } from "@/store/authStore";
 
 export interface Badge {
   id: string;

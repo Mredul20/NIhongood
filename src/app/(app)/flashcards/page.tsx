@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { HIRAGANA, KATAKANA } from "@/data/kana";
 import { VOCABULARY } from "@/data/vocabulary";
 import { KANJI_N5 } from "@/data/kanji";
-import { speak } from "@/lib/speak";
-import { useLearningStore } from "@/store/learningStore";
+import { normalizeJapaneseTTS, speak } from "@/lib/speak";
 import { useProgressStore } from "@/store/progressStore";
 
 type DeckType = "kana" | "vocab" | "kanji" | "all";
@@ -44,7 +43,7 @@ function buildDeck(type: DeckType): FlashCard[] {
     // Use hiragana for TTS — it's always pronounced correctly by the speech engine.
     // Kanji alone can be misread (e.g. 二 read as "ichi"). Strip any "/" alternatives
     // (e.g. "いい/よい") and use only the first reading.
-    audio: v.hiragana.split("/")[0],
+    audio: normalizeJapaneseTTS(v.hiragana),
     audioBack: v.english,
     type: "vocab" as DeckType,
     emoji: "📖",
@@ -56,7 +55,7 @@ function buildDeck(type: DeckType): FlashCard[] {
     frontSub: `${k.strokes} strokes`,
     back: k.meaning.join(", "),
     backSub: [k.onyomi[0], k.kunyomi[0]].filter(Boolean).join(" · "),
-    audio: k.kanji,
+    audio: normalizeJapaneseTTS(k.kunyomi[0] || k.onyomi[0] || k.kanji),
     audioBack: k.meaning[0],
     type: "kanji" as DeckType,
     emoji: "漢",
@@ -87,9 +86,9 @@ export default function FlashcardsPage() {
   const [sessionDone, setSessionDone] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
 
-  const learning = useLearningStore();
   const progress = useProgressStore();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
   // Auto-play audio on card reveal
@@ -317,15 +316,15 @@ export default function FlashcardsPage() {
 
           {cardState === "front" ? (
             <>
-              <p className="text-7xl font-japanese font-black mb-3" style={{ color: "var(--text-primary)" }}>{card.front}</p>
+              <p className="text-5xl sm:text-7xl font-japanese font-black mb-3" style={{ color: "var(--text-primary)" }}>{card.front}</p>
               {card.frontSub && <p className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>{card.frontSub}</p>}
               <p className="text-xs font-semibold mt-4 opacity-60" style={{ color: "var(--text-secondary)" }}>Tap to reveal →</p>
             </>
           ) : (
             <>
-              <p className="text-4xl font-black mb-2" style={{ color: deckOpt.color }}>{card.back}</p>
-              {card.backSub && <p className="text-base font-bold" style={{ color: "var(--text-secondary)" }}>{card.backSub}</p>}
-              <p className="text-3xl font-japanese mt-3" style={{ color: "var(--text-primary)", opacity: 0.5 }}>{card.front}</p>
+              <p className="text-2xl sm:text-4xl font-black mb-2" style={{ color: deckOpt.color }}>{card.back}</p>
+              {card.backSub && <p className="text-sm sm:text-base font-bold" style={{ color: "var(--text-secondary)" }}>{card.backSub}</p>}
+              <p className="text-2xl sm:text-3xl font-japanese mt-3" style={{ color: "var(--text-primary)", opacity: 0.5 }}>{card.front}</p>
             </>
           )}
         </div>
@@ -333,18 +332,18 @@ export default function FlashcardsPage() {
 
       {/* Rating buttons — only show after flip */}
       {cardState === "back" ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => rate(false)}
-            className="py-4 rounded-2xl border-2 font-black text-base uppercase tracking-wide transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
-            style={{ background: "rgba(255,75,75,0.1)", borderColor: "#ff4b4b", color: "#d93636", boxShadow: "0 4px 0 rgba(255,75,75,0.3)" }}
+            className="py-5 rounded-2xl border-2 font-black text-base uppercase tracking-wide transition-all hover:translate-y-[-2px] active:scale-95"
+            style={{ background: "rgba(255,75,75,0.1)", borderColor: "#ff4b4b", color: "#d93636", boxShadow: "0 4px 0 rgba(255,75,75,0.3)", minHeight: "64px" }}
           >
             🔁 Again
           </button>
           <button
             onClick={() => rate(true)}
-            className="py-4 rounded-2xl border-2 font-black text-base uppercase tracking-wide transition-all hover:translate-y-[-2px] active:translate-y-[1px]"
-            style={{ background: "rgba(88,204,2,0.1)", borderColor: "#ff4b8b", color: "#e0357a", boxShadow: "0 4px 0 rgba(88,204,2,0.3)" }}
+            className="py-5 rounded-2xl border-2 font-black text-base uppercase tracking-wide transition-all hover:translate-y-[-2px] active:scale-95"
+            style={{ background: "rgba(88,204,2,0.1)", borderColor: "#ff4b8b", color: "#e0357a", boxShadow: "0 4px 0 rgba(88,204,2,0.3)", minHeight: "64px" }}
           >
             ✅ Got it!
           </button>
@@ -361,8 +360,12 @@ export default function FlashcardsPage() {
       {/* Skip */}
       <button
         onClick={() => {
+          // Count skipped card as unknown so it comes back in "Review Missed"
+          const card = deck[index];
+          setUnknown((s) => new Set([...s, card.id]));
           if (index + 1 >= deck.length) {
             setSessionDone(true);
+            progress.recordStudySession(5);
           } else {
             setCardState("front");
             setIndex((i) => i + 1);

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { VOCABULARY, VOCAB_CATEGORIES, VocabWord } from "@/data/vocabulary";
 import { useLearningStore } from "@/store/learningStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
 import { useUserPreferencesStore } from "@/store/userPreferencesStore";
-import { speak } from "@/lib/speak";
+import { getJapaneseTTSText, normalizeJapaneseTTS, speak } from "@/lib/speak";
+import { hiraganaToRomaji } from "@/lib/romaji";
 
 export default function VocabPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -15,12 +17,22 @@ export default function VocabPage() {
   const [quizMode, setQuizMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    if (selectedWord) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [selectedWord]);
+
   const learning = useLearningStore();
   const progress = useProgressStore();
   const srs = useSRSStore();
   const { uiPreferences } = useUserPreferencesStore();
   const showFurigana = uiPreferences.showFurigana;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return <div className="animate-pulse duo-card h-96" />;
 
@@ -33,14 +45,14 @@ export default function VocabPage() {
     return matchesCategory && matchesSearch;
   });
 
-  const learnedCount = Object.keys(learning.learnedVocab).length;
+  const learnedCount = Object.values(learning.learnedVocab).filter(Boolean).length;
   const masteryPct = Math.round((learnedCount / VOCABULARY.length) * 100);
 
   if (quizMode) {
     return (
       <VocabQuiz
         words={filteredWords.length >= 4 ? filteredWords : VOCABULARY}
-        onComplete={(score, total) => { progress.addXP(score * 10); progress.recordStudySession(3); progress.recordLessonComplete(); setQuizMode(false); }}
+        onComplete={(score) => { progress.addXP(score * 10); progress.recordStudySession(3); progress.recordLessonComplete(); setQuizMode(false); }}
         markLearned={(id) => learning.markVocabLearned(id)}
         onExit={() => setQuizMode(false)}
       />
@@ -145,10 +157,11 @@ export default function VocabPage() {
                   {!showFurigana && (
                     <p className="text-sm font-japanese font-semibold" style={{ color: "#ce82ff" }}>{word.hiragana}</p>
                   )}
+                  <p className="text-xs font-medium italic" style={{ color: "var(--text-secondary)" }}>{hiraganaToRomaji(word.hiragana)}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={(e) => { e.stopPropagation(); speak(word.hiragana.split("/")[0]); }}
+                    onClick={(e) => { e.stopPropagation(); speak(normalizeJapaneseTTS(word.hiragana)); }}
                     className="w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm hover:scale-110 transition-transform"
                     style={{ borderColor: "rgba(28,176,246,0.3)", background: "rgba(28,176,246,0.08)", color: "#1cb0f6" }}
                     title="Hear pronunciation"
@@ -158,7 +171,9 @@ export default function VocabPage() {
                   {isLearned && <span className="text-sm">✅</span>}
                 </div>
               </div>
+              {/* English meaning */}
               <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{word.english}</p>
+              {/* Part of speech */}
               <p className="text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block"
                 style={{ background: "rgba(206,130,255,0.1)", color: "#a560d8" }}>
                 {word.partOfSpeech}
@@ -168,24 +183,28 @@ export default function VocabPage() {
         })}
       </div>
 
-      {/* Word Detail Modal */}
-      {selectedWord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setSelectedWord(null)}>
+      {/* Word Detail Modal — rendered via portal to escape stacking contexts */}
+      {selectedWord && createPortal(
+        <div
+          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+          onClick={() => setSelectedWord(null)}
+        >
           <div
-            className="w-full max-w-md rounded-2xl p-6 border-2 animate-scale-in"
+            className="w-full max-w-md rounded-2xl p-6 border-2 animate-scale-in overflow-y-auto max-h-[90vh]"
             style={{ background: "var(--bg-card)", borderColor: "var(--border-color)", boxShadow: "0 8px 0 var(--border-color)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Word display */}
             <div className="text-center mb-5">
               <button
-                onClick={() => speak(selectedWord.hiragana.split("/")[0])}
+                onClick={() => speak(normalizeJapaneseTTS(selectedWord.hiragana))}
                 className="text-5xl font-japanese font-bold hover:scale-110 transition-transform cursor-pointer block mx-auto mb-1"
                 style={{ color: "var(--text-primary)" }}
               >
                 {selectedWord.kanji}
               </button>
               <p className="text-lg font-japanese font-semibold mb-1" style={{ color: "#ce82ff" }}>{selectedWord.hiragana}</p>
+              <p className="text-sm font-medium italic mb-1" style={{ color: "var(--text-secondary)" }}>{hiraganaToRomaji(selectedWord.hiragana)}</p>
               <p className="text-xl font-black" style={{ color: "var(--text-primary)" }}>{selectedWord.english}</p>
               <span className="inline-block mt-1 text-xs font-bold px-3 py-1 rounded-full"
                 style={{ background: "rgba(206,130,255,0.12)", color: "#a560d8" }}>
@@ -196,7 +215,7 @@ export default function VocabPage() {
             {/* Audio buttons */}
             <div className="flex justify-center gap-3 mb-5">
               <button
-                onClick={() => speak(selectedWord.hiragana.split("/")[0])}
+                onClick={() => speak(normalizeJapaneseTTS(selectedWord.hiragana))}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all hover:translate-y-[-1px]"
                 style={{ background: "rgba(28,176,246,0.08)", borderColor: "rgba(28,176,246,0.3)", color: "#1cb0f6", boxShadow: "0 3px 0 rgba(28,176,246,0.2)" }}
               >
@@ -216,7 +235,7 @@ export default function VocabPage() {
               style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}>
               <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary)" }}>Example Sentence</p>
               <button
-                onClick={() => speak(selectedWord.example.ja)}
+                onClick={() => speak(getJapaneseTTSText(selectedWord.example.ja, selectedWord.example.reading))}
                 className="text-base font-japanese font-semibold block text-left hover:opacity-75 transition-opacity w-full"
                 style={{ color: "var(--text-primary)" }}
               >
@@ -246,7 +265,8 @@ export default function VocabPage() {
               <button onClick={() => setSelectedWord(null)} className="btn-secondary">Close</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -271,7 +291,8 @@ function VocabQuiz({ words, onComplete, markLearned, onExit }: {
       return { word, options, correct: options.indexOf(word.english) };
     });
     setQuestions(qs);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // words intentionally excluded: snapshot on mount only
 
   if (questions.length === 0) return null;
 
@@ -309,14 +330,14 @@ function VocabQuiz({ words, onComplete, markLearned, onExit }: {
       <div className="duo-card p-8 text-center">
         <p className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: "var(--text-secondary)" }}>What does this mean?</p>
         <button
-          onClick={() => speak(q.word.hiragana.split("/")[0])}
+          onClick={() => speak(normalizeJapaneseTTS(q.word.hiragana))}
           className="text-6xl font-japanese font-bold hover:scale-110 transition-transform cursor-pointer block mx-auto"
           style={{ color: "var(--text-primary)" }}
         >
           {q.word.kanji}
         </button>
         <p className="text-lg font-japanese font-semibold mt-2" style={{ color: "#ce82ff" }}>{q.word.hiragana}</p>
-        <button onClick={() => speak(q.word.hiragana.split("/")[0])} className="mt-3 text-sm font-bold" style={{ color: "#1cb0f6" }}>🔊 Play audio</button>
+        <button onClick={() => speak(normalizeJapaneseTTS(q.word.hiragana))} className="mt-3 text-sm font-bold" style={{ color: "#1cb0f6" }}>🔊 Play audio</button>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
@@ -332,7 +353,7 @@ function VocabQuiz({ words, onComplete, markLearned, onExit }: {
               onClick={() => {
                 if (selected !== null) return;
                 setSelected(i);
-                if (i === q.correct) { setScore((s) => s + 1); markLearned(q.word.id); speak(q.word.hiragana.split("/")[0]); }
+                if (i === q.correct) { setScore((s) => s + 1); markLearned(q.word.id); speak(normalizeJapaneseTTS(q.word.hiragana)); }
                 setTimeout(() => { setSelected(null); setQi((n) => n + 1); }, 1100);
               }}
               className="p-4 rounded-2xl border-2 font-bold text-base text-left transition-all"

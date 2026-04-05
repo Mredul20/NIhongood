@@ -15,22 +15,22 @@ export default function DashboardPage() {
   const learning = useLearningStore();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   useEffect(() => {
     if (!mounted) return;
     progress.checkBadges({
       totalReviews: progress.totalReviews,
       streak: progress.currentStreak,
-      vocabLearned: Object.keys(learning.learnedVocab).length,
-      hiraganaLearned: Object.keys(learning.learnedKana).filter((k) =>
-        k.charCodeAt(0) >= 0x3040 && k.charCodeAt(0) <= 0x309f
+      vocabLearned: Object.values(learning.learnedVocab).filter(Boolean).length,
+      hiraganaLearned: Object.entries(learning.learnedKana).filter(([k, v]) =>
+        v && k.charCodeAt(0) >= 0x3040 && k.charCodeAt(0) <= 0x309f
       ).length,
-      katakanaLearned: Object.keys(learning.learnedKana).filter((k) =>
-        k.charCodeAt(0) >= 0x30a0 && k.charCodeAt(0) <= 0x30ff
+      katakanaLearned: Object.entries(learning.learnedKana).filter(([k, v]) =>
+        v && k.charCodeAt(0) >= 0x30a0 && k.charCodeAt(0) <= 0x30ff
       ).length,
-      kanaLearned: Object.keys(learning.learnedKana).length,
-      grammarCompleted: Object.keys(learning.completedGrammar).length,
+      kanaLearned: Object.values(learning.learnedKana).filter(Boolean).length,
+      grammarCompleted: Object.values(learning.completedGrammar).filter(Boolean).length,
       totalXP: progress.totalXP,
       level: progress.level,
     });

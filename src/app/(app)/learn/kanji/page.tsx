@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { KANJI_N5, KANJI_CATEGORIES, KanjiChar } from "@/data/kanji";
 import { useLearningStore } from "@/store/learningStore";
 import { useProgressStore } from "@/store/progressStore";
 import { useSRSStore } from "@/store/srsStore";
-import { speak } from "@/lib/speak";
+import { normalizeJapaneseTTS, speak } from "@/lib/speak";
 
 type Mode = "browse" | "quiz" | "detail";
+
+function getPreferredKanjiReading(kanji: KanjiChar) {
+  return normalizeJapaneseTTS(kanji.kunyomi[0] || kanji.onyomi[0] || kanji.kanji);
+}
 
 export default function KanjiPage() {
   const [mode, setMode] = useState<Mode>("browse");
@@ -19,6 +23,7 @@ export default function KanjiPage() {
   const progress = useProgressStore();
   const srs = useSRSStore();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return <div className="animate-pulse duo-card h-96" />;
 
@@ -46,7 +51,7 @@ export default function KanjiPage() {
     return (
       <KanjiQuiz
         kanjiSet={filtered.length > 0 ? filtered : KANJI_N5}
-        onComplete={(score, total) => {
+        onComplete={(score) => {
           progress.addXP(score * 8);
           progress.recordStudySession(5);
           setMode("browse");
@@ -187,7 +192,7 @@ function KanjiDetailModal({ kanji, isLearned, onLearn, onClose }: {
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl font-japanese font-bold border-2 cursor-pointer hover:scale-110 transition-transform"
               style={{ background: "rgba(255,150,0,0.1)", borderColor: "rgba(255,150,0,0.3)", color: "#ff9600" }}
-              onClick={() => speak(kanji.kanji)}
+              onClick={() => speak(getPreferredKanjiReading(kanji))}
               title="Click to hear pronunciation"
             >
               {kanji.kanji}
@@ -196,7 +201,7 @@ function KanjiDetailModal({ kanji, isLearned, onLearn, onClose }: {
               <p className="text-xl font-black" style={{ color: "var(--text-primary)" }}>{kanji.meaning.join(", ")}</p>
               <p className="text-xs font-bold mt-0.5" style={{ color: "var(--text-secondary)" }}>{kanji.strokes} strokes · N5</p>
               <button
-                onClick={() => speak(kanji.kanji)}
+                onClick={() => speak(getPreferredKanjiReading(kanji))}
                 className="mt-1.5 flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border-2 transition-all hover:translate-y-[-1px]"
                 style={{ color: "#1cb0f6", borderColor: "rgba(28,176,246,0.3)", background: "rgba(28,176,246,0.08)" }}
               >
@@ -245,7 +250,7 @@ function KanjiDetailModal({ kanji, isLearned, onLearn, onClose }: {
               <div key={i} className="flex items-center justify-between p-2.5 rounded-xl border-2" style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}>
                 <div>
                   <button
-                    onClick={() => speak(ex.word)}
+                    onClick={() => speak(normalizeJapaneseTTS(ex.reading))}
                     className="text-base font-bold font-japanese hover:scale-105 transition-transform inline-block"
                     style={{ color: "var(--text-primary)" }}
                   >
@@ -255,7 +260,7 @@ function KanjiDetailModal({ kanji, isLearned, onLearn, onClose }: {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{ex.meaning}</span>
-                  <button onClick={() => speak(ex.word)} className="text-sm">🔊</button>
+                  <button onClick={() => speak(normalizeJapaneseTTS(ex.reading))} className="text-sm">🔊</button>
                 </div>
               </div>
             ))}
@@ -308,7 +313,8 @@ function KanjiQuiz({ kanjiSet, onComplete, markLearned, onExit }: {
     });
     setQuestions(qs);
     setQi(0); setScore(0); setSelected(null);
-  }, [quizType]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizType]); // kanjiSet/COUNT intentionally excluded: reshuffle on type change only
 
   if (questions.length === 0) return null;
   const finished = qi >= questions.length;
@@ -373,7 +379,7 @@ function KanjiQuiz({ kanjiSet, onComplete, markLearned, onExit }: {
           {quizType === "meaning" ? "What does this kanji mean?" : "What is the reading?"}
         </p>
         <button
-          onClick={() => speak(q.kanji.kanji)}
+          onClick={() => speak(getPreferredKanjiReading(q.kanji))}
           className="text-8xl font-japanese font-bold hover:scale-110 transition-transform cursor-pointer"
           style={{ color: "var(--text-primary)" }}
           title="Click to hear"
@@ -383,7 +389,7 @@ function KanjiQuiz({ kanjiSet, onComplete, markLearned, onExit }: {
         <p className="text-xs font-semibold mt-3" style={{ color: "var(--text-secondary)" }}>
           Tap kanji to hear · {q.kanji.strokes} strokes
         </p>
-        <button onClick={() => speak(q.kanji.kanji)} className="mt-2 text-sm font-bold" style={{ color: "#1cb0f6" }}>🔊 Play audio</button>
+        <button onClick={() => speak(getPreferredKanjiReading(q.kanji))} className="mt-2 text-sm font-bold" style={{ color: "#1cb0f6" }}>🔊 Play audio</button>
       </div>
 
       {/* Options */}
