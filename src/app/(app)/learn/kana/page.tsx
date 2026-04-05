@@ -242,10 +242,10 @@ function KanaQuiz({ kanaSet, tab, onComplete, markLearned }: {
       {/* Progress */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>{qi + 1}/{questions.length}</span>
-        <span className="text-sm font-black" style={{ color }}>{score} ⭐</span>
+        <span className="text-sm font-black" style={{ color: tab === "hiragana" ? "#ff86d0" : "#1cb0f6" }}>{score} ⭐</span>
       </div>
       <div className="progress-bar mb-6">
-        <div className="progress-bar-fill" style={{ width: `${((qi + 1) / questions.length) * 100}%`, background: `linear-gradient(90deg, ${color}, ${color}bb)` }} />
+        <div className="progress-bar-fill" style={{ width: `${((qi + 1) / questions.length) * 100}%`, background: tab === "hiragana" ? "linear-gradient(90deg, #ff86d0, #ff86d0bb)" : "linear-gradient(90deg, #1cb0f6, #1cb0f6bb)" }} />
       </div>
 
       {/* Question */}
